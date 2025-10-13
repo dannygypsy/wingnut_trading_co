@@ -1,58 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:front_desk_app/model/customization.dart';
+import 'package:front_desk_app/model/inventory_item.dart';
 import 'package:front_desk_app/model/order.dart';
 import 'package:front_desk_app/model/order_item.dart';
 import 'package:front_desk_app/util/db.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 class OrderProvider extends ChangeNotifier {
   Order? _currentOrder;
-  List<OrderItem> _currentItems = [];
-  List<Customization> _currentCustomizations = [];
   bool _isLoading = false;
   String? _error;
 
   // Getters
   Order? get currentOrder => _currentOrder;
-  List<OrderItem> get currentItems => _currentItems;
-  List<Customization> get currentCustomizations => _currentCustomizations;
+  List<OrderItem> get currentItems => _currentOrder?.items ?? [];
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasOrder => _currentOrder != null;
 
   // Calculate current order total
-  double get currentTotal {
-    double total = 0;
-    for (var item in _currentItems) {
-      total += item.retail * item.quantity;
-    }
-    for (var custom in _currentCustomizations) {
-      total += (custom.retail ?? 0);
-    }
-    return total;
-  }
+  double get currentTotal => _currentOrder?.calculateTotal() ?? 0;
 
   // Get number of items in current order
-  int get itemCount => _currentItems.length;
+  int get itemCount => _currentOrder?.itemCount ?? 0;
 
   // Start a new order
-  void startNewOrder({String? createdBy}) {
+  void startNewOrder({String? customer, String? notes, String? createdBy}) {
     final orderId = Uuid().v4();
 
     _currentOrder = Order(
       id: orderId,
-      customer: "",
-      notes: "",
+      customer: customer,
+      notes: notes,
       createdAt: DateTime.now().millisecondsSinceEpoch,
       createdBy: createdBy,
       total: 0,
       status: 'pending',
+      items: [],
     );
-    _currentItems = [];
-    _currentCustomizations = [];
     _error = null;
 
-    //notifyListeners();
+    // notifyListeners();
   }
 
   // Load an existing order for editing
@@ -75,23 +64,30 @@ class OrderProvider extends ChangeNotifier {
         throw Exception('Order not found');
       }
 
-      _currentOrder = Order.fromMap(orderResults.first);
-
       // Load order items
       final itemResults = await db.query(
         'order_items',
         where: 'order_id = ?',
         whereArgs: [orderId],
       );
-      _currentItems = itemResults.map((map) => OrderItem.fromMap(map)).toList();
 
-      // Load customizations
-      final customResults = await db.query(
-        'customizations',
-        where: 'order_id = ?',
-        whereArgs: [orderId],
-      );
-      _currentCustomizations = customResults.map((map) => Customization.fromMap(map)).toList();
+      List<OrderItem> items = [];
+      for (var itemMap in itemResults) {
+        // Load customizations for this item
+        final customResults = await db.query(
+          'customizations',
+          where: 'item_id = ?',
+          whereArgs: [itemMap['id']],
+        );
+
+        List<Customization> customizations = customResults
+            .map((map) => Customization.fromMap(map))
+            .toList();
+
+        items.add(OrderItem.fromMap(itemMap, customizations: customizations));
+      }
+
+      _currentOrder = Order.fromMap(orderResults.first, items: items);
 
       _isLoading = false;
       notifyListeners();
@@ -118,9 +114,7 @@ class OrderProvider extends ChangeNotifier {
 
   // Add item to current order
   void addItem({
-    required String inventoryId,
-    required String name,
-    required double retail,
+    required InventoryItem inventoryItem,
     int quantity = 1,
   }) {
     if (_currentOrder == null) {
@@ -129,45 +123,77 @@ class OrderProvider extends ChangeNotifier {
       return;
     }
 
+    // Find the inventory item
+    // Check if item already exists in order
+    if (inventoryItem.type != 'blank') {
+      final existingIndex = _currentOrder!.items.indexWhere((item) =>
+      item.inventoryId == inventoryItem.id);
+      if (existingIndex != -1) {
+        // If it exists, just update the quantity
+        final existingItem = _currentOrder!.items[existingIndex];
+        _currentOrder!.items[existingIndex] =
+            existingItem.copyWith(quantity: existingItem.quantity + quantity);
+        notifyListeners();
+        return;
+      }
+    }
+
+
     final itemId = Uuid().v4();
 
     final item = OrderItem(
       id: itemId,
       orderId: _currentOrder!.id,
-      inventoryId: inventoryId,
-      name: name,
-      retail: retail,
+      inventoryId: inventoryItem.id,
+      name: inventoryItem.name,
+      retail: inventoryItem.retail,
       quantity: quantity,
+      customizations: [],
     );
 
-    _currentItems.add(item);
+    _currentOrder!.items.add(item);
     notifyListeners();
   }
 
   // Update item quantity
   void updateItemQuantity(String itemId, int newQuantity) {
-    final index = _currentItems.indexWhere((item) => item.id == itemId);
+    if (_currentOrder == null) return;
+
+    final index = _currentOrder!.items.indexWhere((item) => item.id == itemId);
     if (index != -1) {
       if (newQuantity <= 0) {
-        _currentItems.removeAt(index);
+        _currentOrder!.items.removeAt(index);
       } else {
-        _currentItems[index] = _currentItems[index].copyWith(quantity: newQuantity);
+        _currentOrder!.items[index] = _currentOrder!.items[index].copyWith(quantity: newQuantity);
       }
+      notifyListeners();
+    }
+  }
+
+  // Update an item's details (like price)
+  void updateItem(OrderItem updatedItem) {
+    if (_currentOrder == null) return;
+
+    final index = _currentOrder!.items.indexWhere((item) => item.id == updatedItem.id);
+    if (index != -1) {
+      _currentOrder!.items[index] = updatedItem;
       notifyListeners();
     }
   }
 
   // Remove item from current order
   void removeItem(String itemId) {
-    _currentItems.removeWhere((item) => item.id == itemId);
+    if (_currentOrder == null) return;
+
+    _currentOrder!.items.removeWhere((item) => item.id == itemId);
     notifyListeners();
   }
 
-  // Add customization to current order
-  void addCustomization({
+  // Add customization to a specific item
+  void addCustomizationToItem({
+    required String itemId,
     required String name,
     required double retail,
-    String? itemId,
     String? inventoryId,
     String? notes,
   }) {
@@ -176,6 +202,8 @@ class OrderProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
+
+    final item = _currentOrder!.items.firstWhere((item) => item.id == itemId);
 
     final customId = Uuid().v4();
 
@@ -189,13 +217,16 @@ class OrderProvider extends ChangeNotifier {
       notes: notes,
     );
 
-    _currentCustomizations.add(customization);
+    item.customizations.add(customization);
     notifyListeners();
   }
 
-  // Remove customization
-  void removeCustomization(String customId) {
-    _currentCustomizations.removeWhere((custom) => custom.id == customId);
+  // Remove customization from an item
+  void removeCustomizationFromItem(String itemId, String customId) {
+    if (_currentOrder == null) return;
+
+    final item = _currentOrder!.items.firstWhere((item) => item.id == itemId);
+    item.customizations.removeWhere((custom) => custom.id == customId);
     notifyListeners();
   }
 
@@ -205,7 +236,7 @@ class OrderProvider extends ChangeNotifier {
       throw Exception('No active order to save');
     }
 
-    if (_currentItems.isEmpty) {
+    if (_currentOrder!.items.isEmpty) {
       throw Exception('Cannot save order with no items');
     }
 
@@ -244,14 +275,14 @@ class OrderProvider extends ChangeNotifier {
         await txn.delete('order_items', where: 'order_id = ?', whereArgs: [orderToSave.id]);
         await txn.delete('customizations', where: 'order_id = ?', whereArgs: [orderToSave.id]);
 
-        // Insert items
-        for (var item in _currentItems) {
+        // Insert items and their customizations
+        for (var item in orderToSave.items) {
           await txn.insert('order_items', item.toMap());
-        }
 
-        // Insert customizations
-        for (var custom in _currentCustomizations) {
-          await txn.insert('customizations', custom.toMap());
+          // Insert customizations for this item
+          for (var custom in item.customizations) {
+            await txn.insert('customizations', custom.toMap());
+          }
         }
       });
 
@@ -270,17 +301,18 @@ class OrderProvider extends ChangeNotifier {
 
   // Clear current order (without saving)
   void clearOrder() {
-    _currentOrder = null;
-    _currentItems = [];
-    _currentCustomizations = [];
+    // clear all items from the current order AND the note
+    _currentOrder?.clearItems();
     _error = null;
     notifyListeners();
   }
 
   // Get item by ID from current order
   OrderItem? getItemById(String itemId) {
+    if (_currentOrder == null) return null;
+
     try {
-      return _currentItems.firstWhere((item) => item.id == itemId);
+      return _currentOrder!.items.firstWhere((item) => item.id == itemId);
     } catch (e) {
       return null;
     }
@@ -288,7 +320,18 @@ class OrderProvider extends ChangeNotifier {
 
   // Check if inventory item is already in order
   bool hasInventoryItem(String inventoryId) {
-    return _currentItems.any((item) => item.inventoryId == inventoryId);
+    if (_currentOrder == null) return false;
+    return _currentOrder!.items.any((item) => item.inventoryId == inventoryId);
   }
 
+  // Get quantity of specific inventory item in order
+  int getInventoryItemQuantity(String inventoryId) {
+    if (_currentOrder == null) return 0;
+
+    final item = _currentOrder!.items.firstWhere(
+          (item) => item.inventoryId == inventoryId,
+      orElse: () => OrderItem(id: '', orderId: '', inventoryId: '', name: '', retail: 0, quantity: 0)
+    );
+    return item.quantity ?? 0;
+  }
 }

@@ -4,8 +4,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:front_desk_app/model/inventory_item.dart';
+import 'package:front_desk_app/model/values.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
+import 'package:front_desk_app/provider/printer_provider.dart';
+import 'package:front_desk_app/util/dialogs.dart';
 import 'package:front_desk_app/util/loading_indicator.dart';
 import 'package:front_desk_app/views/order/inventory_category_card.dart';
 import 'package:provider/provider.dart';
@@ -92,13 +95,12 @@ class OrderPageState extends State<OrderPage> {
                             builder: (context, order, child) {
                               return Column(
                                   children: [
-                                    const Expanded(
-                                      child: OrderReceiptCard(),
+                                    Expanded(
+                                      child: OrderReceiptCard(onGuestTapped: _customer,),
                                     ),
                                     const SizedBox(height: 10),
-                                    ButtonBar(
-                                      mainAxisSize: MainAxisSize.min,
-                                      // this will take space as minimum as posible(to center)
+                                    OverflowBar(
+                                      spacing: 10,
                                       children: <Widget>[
                                         Material( //Wrap with Material
                                           shape: RoundedRectangleBorder(
@@ -109,6 +111,9 @@ class OrderPageState extends State<OrderPage> {
                                           clipBehavior: Clip.antiAlias,
                                           // Add This
                                           child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
                                             child: const Icon(FontAwesomeIcons.arrowRotateLeft),
                                             onPressed: () {
                                               _resetOrder();
@@ -124,6 +129,9 @@ class OrderPageState extends State<OrderPage> {
                                           clipBehavior: Clip.antiAlias,
                                           // Add This
                                           child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
                                             child: Icon(FontAwesomeIcons.person),
                                             onPressed: () {
                                               _customer();
@@ -139,6 +147,9 @@ class OrderPageState extends State<OrderPage> {
                                           clipBehavior: Clip.antiAlias,
                                           // Add This
                                           child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
                                             child: Icon(FontAwesomeIcons.noteSticky),
                                             onPressed: () {
                                               _comments();
@@ -150,12 +161,31 @@ class OrderPageState extends State<OrderPage> {
                                               borderRadius: BorderRadius.circular(
                                                   10.0)),
                                           elevation: 18.0,
+                                          color: Colors.blueGrey,
+                                          clipBehavior: Clip.antiAlias,
+                                          // Add This
+                                          child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
+                                            child: Icon(FontAwesomeIcons.print),
+                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty ? _printOrder : null,
+                                          ),
+                                        ),
+                                        Material( //Wrap with Material
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                  10.0)),
+                                          elevation: 18.0,
                                           color: Colors.green,
                                           clipBehavior: Clip.antiAlias,
                                           // Add This
                                           child: MaterialButton(
-                                            child: Icon(FontAwesomeIcons.print),
-                                            onPressed: order.currentItems.isNotEmpty ? _submitOrder : null,
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
+                                            child: Icon(FontAwesomeIcons.save),
+                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty ? _saveOrder : null,
                                           ),
                                         )
                                       ],
@@ -171,7 +201,7 @@ class OrderPageState extends State<OrderPage> {
     );
   }
 
-  Future<bool> _submitOrder() async {
+  Future<bool> _saveOrder() async {
     OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
 
 
@@ -209,29 +239,29 @@ class OrderPageState extends State<OrderPage> {
 
      */
 
-    return await _printOrder();
+    return true;
   }
 
   Future<bool>_printOrder() async {
 
     debugPrint("Attempting to print this order...");
 
-    /*
+
     PrinterProvider pp = Provider.of<PrinterProvider>(context, listen: false);
     OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
 
     if (await pp.isConnected()) {
       //debugPrint("Printer is connected.");
-      pp.printOrder(op.order!);
+      pp.printOrder(op.currentOrder!);
     } else {
       //debugPrint("Printer is not connected.");
       await errorDialog(Values.navigatorKey.currentContext!, "No printer is connected, but the order has been entered. Go to the printer menu and connect to a printer, then go to the orders screen to reprint this order.");
     }
 
-     */
+
 
     // Pop back to whatever page this came from
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
 
     return true;
   }
@@ -444,19 +474,17 @@ class OrderPageState extends State<OrderPage> {
   _onSelectedItem(InventoryItem i) {
     debugPrint("Selected ${i.name}");
 
-    /*
     OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
 
-    int indx = op.order!.items.indexWhere((element) => element.menuItemId == i.id);
-    if (indx >= 0) {
-      op.order!.items[indx].num++;
-    } else {
-      op.order!.items.add(OrderItem(menuItemId: i.id, name: i.name));
+
+    // Add the item to the order
+    op.addItem(inventoryItem: i);
+
+    // If this item is of type 'blank', go to the customization screen
+    if (i.type == "blank") {
+      debugPrint("This is a blank item, so go to customization screen...");
+      //Navigator.push(context, MaterialPageRoute(builder: (context) => CustomizeItemPage(item
     }
-
-    op.orderChanged();
-
-     */
   }
 
   _resetOrder() async {

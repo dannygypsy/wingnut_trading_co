@@ -6,6 +6,7 @@ import 'package:bluetooth_print/bluetooth_print_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:front_desk_app/model/order.dart';
+import 'package:front_desk_app/model/values.dart';
 import 'package:intl/intl.dart';
 
 class PrinterProvider extends ChangeNotifier {
@@ -54,28 +55,35 @@ class PrinterProvider extends ChangeNotifier {
 
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'THE WINGNUT TRADING CO.', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'Cameron, North Carolina', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
-    list.add(LineText(linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: "- ${o.customer?.toUpperCase()} -", weight: 1, align: LineText.ALIGN_CENTER, linefeed: 1));
-    list.add(LineText(linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: '*****************************', weight: 1, align: LineText.ALIGN_CENTER,linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: '********************************', weight: 1, align: LineText.ALIGN_CENTER,linefeed: 1));
     list.add(LineText(linefeed: 1));
 
     // Go through the order
-    /*
-    for (var element in o) {
-      list.add(LineText(type: LineText.TYPE_TEXT, content: "${element.num} ${element.name}", weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
+
+    for (var element in o.items) {
+      double total = element.quantity * element.retail;
+      final s = formatReceiptLine("${element.quantity} ${element.name}", "\$${total.toStringAsFixed(2)}");
+      list.add(LineText(type: LineText.TYPE_TEXT, content: s, weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
     }
 
-     */
+
 
     if (o.notes != null && o.notes!.isNotEmpty) {
       list.add(LineText(linefeed: 1));
       list.add(LineText(type: LineText.TYPE_TEXT, content: 'NOTES: ${o.notes}', weight: 1, align: LineText.ALIGN_LEFT,linefeed: 1));
-      list.add(LineText(linefeed: 1));
     }
 
+    // Total
+    double orderTotal = 0.0;
+    for (var element in o.items) {
+      orderTotal += element.quantity * element.retail;
+    }
+    final totalString = formatReceiptLine("TOTAL:", "\$${orderTotal.toStringAsFixed(2)}");
     list.add(LineText(linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: '*****************************', weight: 1, align: LineText.ALIGN_LEFT,linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: totalString, weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
+
+    list.add(LineText(linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: '********************************', weight: 1, align: LineText.ALIGN_CENTER,linefeed: 1));
     list.add(LineText(linefeed: 1));
     //list.add(LineText(type: LineText.TYPE_TEXT, content: 'PAYMENT: Free - we love you', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
     DateTime now = DateTime.now();
@@ -84,9 +92,10 @@ class PrinterProvider extends ChangeNotifier {
     }
     String formattedDate = DateFormat('dd/MM/yyyy kk:mm').format(now);
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'DATE/TIME: $formattedDate', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: 'GUEST: ${o.customer?.toUpperCase()}', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
     list.add(LineText(linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: 'SPRING HUNT 2025', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: 'MAY THE ODDS BE IN YOUR FAVOR!', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: 'THANK YOU FOR SUPPORTING', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: 'WINGNUT STABLES!', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
 
     //ByteData data = await rootBundle.load("assets/images/bluetooth_print.png");
     //List<int> imageBytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
@@ -94,5 +103,23 @@ class PrinterProvider extends ChangeNotifier {
     // list.add(LineText(type: LineText.TYPE_IMAGE, content: base64Image, align: LineText.ALIGN_CENTER, linefeed: 1));
 
     await bluetoothPrint.printReceipt(config, list);
+  }
+
+  String formatReceiptLine(String leftText, String rightText) {
+    // If combined text is too long, truncate left text
+    if (leftText.length + rightText.length > Values.printerWidth) {
+      int availableForLeft = Values.printerWidth - rightText.length - 1; // -1 for at least one space
+      if (availableForLeft > 0) {
+        leftText = leftText.substring(0, availableForLeft);
+      } else {
+        leftText = "";
+      }
+    }
+
+    // Calculate spaces needed
+    int spacesNeeded = Values.printerWidth - leftText.length - rightText.length;
+    String spaces = ' ' * spacesNeeded.clamp(0, Values.printerWidth);
+
+    return leftText + spaces + rightText;
   }
 }

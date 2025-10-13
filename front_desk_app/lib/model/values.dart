@@ -15,4 +15,6 @@ class Values {
   static String? authToken;
   static const String scriptFolder = "/api/wtc";
   static final navigatorKey = GlobalKey<NavigatorState>();
+
+  static int printerWidth = 32;
 }

@@ -1,11 +1,19 @@
+import 'order_item.dart';
+
 class Order {
   final String id;
-  final String? customer;
-  final String? notes;
+  String? customer;
+  String? notes;
   final int? createdAt;  // milliseconds since epoch
   final String? createdBy;
   final double? total;
   final String? status;
+
+  List<OrderItem> items = [];
+
+  clearItems() {
+    items = [];
+  }
 
   Order({
     required this.id,
@@ -15,10 +23,11 @@ class Order {
     this.createdBy,
     this.total,
     this.status,
-  });
+    List<OrderItem>? items,
+  }) : items = items ?? [];
 
   // Convert from database map to Order
-  factory Order.fromMap(Map<String, dynamic> map) {
+  factory Order.fromMap(Map<String, dynamic> map, {List<OrderItem>? items}) {
     return Order(
       id: map['id'] as String,
       customer: map['customer'] as String?,
@@ -27,6 +36,7 @@ class Order {
       createdBy: map['created_by'] as String?,
       total: map['total'] as double?,
       status: map['status'] as String?,
+      items: items,
     );
   }
 
@@ -52,6 +62,7 @@ class Order {
     String? createdBy,
     double? total,
     String? status,
+    List<OrderItem>? items,
   }) {
     return Order(
       id: id ?? this.id,
@@ -61,6 +72,7 @@ class Order {
       createdBy: createdBy ?? this.createdBy,
       total: total ?? this.total,
       status: status ?? this.status,
+      items: items ?? this.items,
     );
   }
 
@@ -69,8 +81,20 @@ class Order {
     return createdAt != null ? DateTime.fromMillisecondsSinceEpoch(createdAt!) : null;
   }
 
+  // Calculate total from items (which includes their customizations)
+  double calculateTotal() {
+    double total = 0;
+    for (var item in items) {
+      total += item.lineTotal;
+    }
+    return total;
+  }
+
+  // Get item count
+  int get itemCount => items.length;
+
   @override
   String toString() {
-    return 'Order{id: $id, customer: $customer, status: $status, total: $total}';
+    return 'Order{id: $id, customer: $customer, status: $status, total: $total, items: ${items.length}}';
   }
 }

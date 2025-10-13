@@ -12,6 +12,8 @@ import 'package:front_desk_app/views/order/order_page.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:provider/provider.dart';
 
+import 'printer/printer_page.dart';
+
 class HomeScreen extends StatelessWidget {
 
   final TextStyle _titleStyle = const TextStyle(fontSize: 24, color: Colors.black, fontWeight: FontWeight.bold);
@@ -159,7 +161,8 @@ class HomeScreen extends StatelessWidget {
                                 child: InkWell(
                                   splashColor: Colors.green.withOpacity(0.5),
                                   onTap: () {
-                                    debugPrint("Menu selected");
+                                    debugPrint("Printer selected");
+                                    Navigator.push(context,MaterialPageRoute(builder: (context) => PrinterPage()),);
                                   },
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -217,31 +220,68 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future<void> _syncData(BuildContext context) async {
-    // Implement your data synchronization logic here
-    final results = await remoteGet('sync', {});
+    // Show loading overlay
+    showDialog(
+      context: context,
+      barrierDismissible: false,  // Prevent dismissing by tapping outside
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,  // Prevent back button dismiss
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Syncing data...',
+                    style: _smallStyle,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
 
-    if (results.success == false || results.data == null) {
-      // Handle error
+    try {
+      // Implement your data synchronization logic here
+      final results = await remoteGet('sync', {});
+
+      // Dismiss loading overlay
       if (context.mounted) {
-        errorDialog(context, results.message);
+        Navigator.of(context).pop();
       }
-      debugPrint("Error during sync: ${results.message}");
-      return;
-    }
 
-    Map m = results.data as Map<String, dynamic>;
-    // Look for 'inventory', a List of inventory items
-    List? inventoryList = m['inventory'] as List?;
-    if (inventoryList != null) {
-      // Process each inventory item
-      for (var item in inventoryList) {
-        // Assuming item is a Map<String, dynamic>
-        Map<String, dynamic> inventoryItem = item as Map<String, dynamic>;
-        // Here you would insert or update the inventory item in your local database
+      if (results.success == false || results.data == null) {
+        // Handle error
+        if (context.mounted) {
+          errorDialog(context, results.message);
+        }
+        debugPrint("Error during sync: ${results.message}");
+        return;
+      }
 
-        Database db = await DatabaseHandler().initializeDB();
-        // Clear the inventory table before inserting new data
-        await db.insert(
+      Map m = results.data as Map<String, dynamic>;
+      // Look for 'inventory', a List of inventory items
+      List? inventoryList = m['inventory'] as List?;
+      if (inventoryList != null) {
+        // Process each inventory item
+        for (var item in inventoryList) {
+          // Assuming item is a Map<String, dynamic>
+          Map<String, dynamic> inventoryItem = item as Map<String, dynamic>;
+          // Here you would insert or update the inventory item in your local database
+
+          Database db = await DatabaseHandler().initializeDB();
+          // Clear the inventory table before inserting new data
+          await db.insert(
             'inventory',
             {
               'id': inventoryItem['id'],
@@ -251,29 +291,33 @@ class HomeScreen extends StatelessWidget {
               'category': inventoryItem['category'],
               'cost': inventoryItem['cost'],
               'retail': inventoryItem['retail'],
-              'image': inventoryItem['image'],
               'purchased_on': inventoryItem['purchased_on'],
               'num_purchased': inventoryItem['num_purchased'],
               'remaining': inventoryItem['remaining'],
             },
             conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+          );
 
-        debugPrint("Inventory item: $inventoryItem");
+          debugPrint("Inventory item: $inventoryItem");
+        }
+      }
+
+      // Force the provider to refresh its data
+      InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
+      await ip.refresh();
+
+      if (context.mounted) {
+        successDialog(context, "Data synchronized successfully");
+      }
+
+      debugPrint("Data synchronized");
+    } catch (e) {
+      // Dismiss loading overlay on error
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        errorDialog(context, "Sync failed: $e");
       }
     }
-
-    // Force the provider to refresh its data
-    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
-    ip.refresh();
-
-
-    if (context.mounted) {
-      successDialog(context, "Data synchronized successfully");
-    }
-
-
-    debugPrint("Data synchronized");
   }
 
 }
