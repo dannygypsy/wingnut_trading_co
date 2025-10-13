@@ -9,8 +9,9 @@ import 'package:intl/intl.dart';
 
 class OrderReceiptCard extends StatefulWidget {
   Function onGuestTapped;
+  Function onNotesTapped;
 
-  OrderReceiptCard({super.key, required this.onGuestTapped});
+  OrderReceiptCard({super.key, required this.onGuestTapped, required this.onNotesTapped});
 
   @override
   State<StatefulWidget> createState() => OrderReceiptCardState();
@@ -88,6 +89,11 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
     _receipt.add(ReceiptLine(text:"THE WINGNUT TRADING CO.", bold: true, centered: true));
     _receipt.add(ReceiptLine(text:"Cameron, North Carolina", centered: true));
     _receipt.add(ReceiptLine(text:" "));
+    _receipt.add(ReceiptLine(text:"ORDER #${op.currentOrder!.id}", centered: true));
+    _receipt.add(ReceiptLine(text:"GUEST: ${op.currentOrder!.customer?.toUpperCase()??"???"}", centered: true,onTap: () {
+      widget.onGuestTapped();
+    }));
+    _receipt.add(ReceiptLine(text:" "));
     _receipt.add(ReceiptLine(text:"********************************"));
     _receipt.add(ReceiptLine(text:" "));
     // Items
@@ -112,7 +118,9 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
 
     if (op.currentOrder!.notes != null && op.currentOrder!.notes!.isNotEmpty) {
       _receipt.add(ReceiptLine(text:" "));
-      _receipt.add(ReceiptLine(text: "NOTES: ${op.currentOrder!.notes}", centered: false));
+      _receipt.add(ReceiptLine(text: "NOTES: ${op.currentOrder!.notes}", centered: false, onTap: () {
+        widget.onNotesTapped();
+      }));
     }
 
 
@@ -132,10 +140,10 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
     _receipt.add(ReceiptLine(text:" "));
     //_receipt.add(ReceiptLine(text:"PAYMENT: Free because we love you"));
 
-    _receipt.add(ReceiptLine(text:"DATE/TIME: $formattedDate"));
-    _receipt.add(ReceiptLine(text:"GUEST: ${op.currentOrder!.customer??"???"}", onTap: () {
-      widget.onGuestTapped();
-    }));
+    _receipt.add(ReceiptLine(text:"$formattedDate", centered: true));
+    //_receipt.add(ReceiptLine(text:"GUEST: ${op.currentOrder!.customer??"???"}", onTap: () {
+    //  widget.onGuestTapped();
+    //}));
     _receipt.add(ReceiptLine(text:" "));
     _receipt.add(ReceiptLine(text:"THANK YOU FOR SUPPORTING", centered: true, bold:true));
     _receipt.add(ReceiptLine(text:"WINGNUT STABLES!", centered: true, bold:true));

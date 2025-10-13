@@ -26,8 +26,8 @@ class OrderProvider extends ChangeNotifier {
   int get itemCount => _currentOrder?.itemCount ?? 0;
 
   // Start a new order
-  void startNewOrder({String? customer, String? notes, String? createdBy}) {
-    final orderId = Uuid().v4();
+  Future<void> startNewOrder({String? customer, String? notes, String? createdBy}) async {
+    final orderId = await DatabaseHandler().generateOrderNumber();
 
     _currentOrder = Order(
       id: orderId,

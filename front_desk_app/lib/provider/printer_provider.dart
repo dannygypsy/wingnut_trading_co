@@ -56,6 +56,9 @@ class PrinterProvider extends ChangeNotifier {
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'THE WINGNUT TRADING CO.', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'Cameron, North Carolina', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
     list.add(LineText(linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: 'ORDER: ${o.id}', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: 'GUEST: ${o.customer?.toUpperCase()}', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
+    list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: '********************************', weight: 1, align: LineText.ALIGN_CENTER,linefeed: 1));
     list.add(LineText(linefeed: 1));
 
@@ -92,8 +95,8 @@ class PrinterProvider extends ChangeNotifier {
       now = DateTime.fromMillisecondsSinceEpoch(o.createdAt??0);
     }
     String formattedDate = DateFormat('dd/MM/yyyy kk:mm').format(now);
-    list.add(LineText(type: LineText.TYPE_TEXT, content: 'DATE/TIME: $formattedDate', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: 'GUEST: ${o.customer?.toUpperCase()}', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: '$formattedDate', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
+    //list.add(LineText(type: LineText.TYPE_TEXT, content: 'GUEST: ${o.customer?.toUpperCase()}', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
     list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'THANK YOU FOR SUPPORTING', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'WINGNUT STABLES!', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));

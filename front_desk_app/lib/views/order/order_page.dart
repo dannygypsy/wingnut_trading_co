@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:front_desk_app/model/inventory_item.dart';
+import 'package:front_desk_app/model/order.dart';
 import 'package:front_desk_app/model/values.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
@@ -31,10 +32,6 @@ class OrderPageState extends State<OrderPage> {
   @override
   void initState() {
     super.initState();
-
-    // Set up a new order in the provider
-    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
-    op.startNewOrder(createdBy: "Danny");  // We can change created by later
   }
 
   @override
@@ -62,13 +59,13 @@ class OrderPageState extends State<OrderPage> {
 
 
 
-
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: const Color(0x00000000),
           centerTitle: true,
           elevation: 0,
+          title: Text("Order ${op.currentOrder!.id}", style: _titleStyle,),
         ),
         body: SizedBox.expand(
             child: Container(
@@ -96,7 +93,7 @@ class OrderPageState extends State<OrderPage> {
                               return Column(
                                   children: [
                                     Expanded(
-                                      child: OrderReceiptCard(onGuestTapped: _customer,),
+                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments,),
                                     ),
                                     const SizedBox(height: 10),
                                     OverflowBar(

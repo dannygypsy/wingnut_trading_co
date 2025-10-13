@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
+import 'package:front_desk_app/provider/order_provider.dart';
 import 'package:front_desk_app/util/comms.dart';
 import 'package:front_desk_app/util/db.dart';
 import 'package:front_desk_app/util/dialogs.dart';
@@ -21,6 +22,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final op = Provider.of<OrderProvider>(context, listen: false);
 
     return Scaffold(
         extendBodyBehindAppBar: true,
@@ -63,9 +65,10 @@ class HomeScreen extends StatelessWidget {
                             ),
                             child: InkWell(
                               splashColor: Colors.green.withOpacity(0.5),
-                              onTap: () {
+                              onTap: () async {
                                 debugPrint("NEW ORDER");
-                                Navigator.push(context,MaterialPageRoute(builder: (context) => const OrderPage()),);
+                                await op.startNewOrder(createdBy: "Danny");
+                                Navigator.push(context,MaterialPageRoute(builder: (context) => OrderPage()),);
                               },
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
