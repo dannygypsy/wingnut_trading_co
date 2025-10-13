@@ -55,6 +55,7 @@ class PrinterProvider extends ChangeNotifier {
 
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'THE WINGNUT TRADING CO.', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'Cameron, North Carolina', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
+    list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: '********************************', weight: 1, align: LineText.ALIGN_CENTER,linefeed: 1));
     list.add(LineText(linefeed: 1));
 

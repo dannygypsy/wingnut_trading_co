@@ -87,6 +87,7 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
     //_receipt.add(ReceiptLine(text:"assets/receipt_logo.png", bold: true, centered: true, type: 2));
     _receipt.add(ReceiptLine(text:"THE WINGNUT TRADING CO.", bold: true, centered: true));
     _receipt.add(ReceiptLine(text:"Cameron, North Carolina", centered: true));
+    _receipt.add(ReceiptLine(text:" "));
     _receipt.add(ReceiptLine(text:"********************************"));
     _receipt.add(ReceiptLine(text:" "));
     // Items
