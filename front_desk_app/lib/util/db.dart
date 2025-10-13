@@ -55,6 +55,7 @@ class DatabaseHandler {
           id TEXT PRIMARY KEY, 
           order_id TEXT,
           item_id TEXT,
+          position TEXT,
           inventory_id TEXT,
           name TEXT,
           retail REAL,

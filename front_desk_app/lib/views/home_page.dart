@@ -13,6 +13,7 @@ import 'package:front_desk_app/views/order/order_page.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:provider/provider.dart';
 
+import 'order/order_list_page.dart';
 import 'printer/printer_page.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -66,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                             child: InkWell(
                               splashColor: Colors.green.withOpacity(0.5),
                               onTap: () async {
-                                debugPrint("NEW ORDER");
+                                //debugPrint("NEW ORDER");
                                 await op.startNewOrder(createdBy: "Danny");
                                 Navigator.push(context,MaterialPageRoute(builder: (context) => OrderPage()),);
                               },
@@ -74,7 +75,7 @@ class HomeScreen extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   const Icon(FontAwesomeIcons.shirtsinbulk, size: 100, color: Colors.black),
-                                  Text("NEW ORDER", style: _titleStyle),
+                                  Text("New Order", style: _titleStyle),
                                 ],
                               ),
                             ),
@@ -102,43 +103,13 @@ class HomeScreen extends StatelessWidget {
                                 child: InkWell(
                                   splashColor: Colors.green.withOpacity(0.5),
                                   onTap: () {
-                                    debugPrint("Menu selected");
+                                    //debugPrint("Orders selected");
+                                    Navigator.push(context,MaterialPageRoute(builder: (context) => OrderListPage()),);
                                   },
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       const Icon(FontAwesomeIcons.clipboardList, size: 75, color: Colors.black),
-                                      Text("Inventory", style: _smallStyle),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width:50),
-                        SizedBox.fromSize(
-                          size: const Size(175, 175),
-                          child: ClipOval(
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(125),
-                                  border: Border.all(
-                                    color: Colors.white.withAlpha(100),
-                                    width: 5,
-                                  ),
-                                ),
-                                child: InkWell(
-                                  splashColor: Colors.green.withOpacity(0.5),
-                                  onTap: () {
-                                    debugPrint("New  selected");
-                                  },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(FontAwesomeIcons.tableList, size: 75, color: Colors.black),
                                       Text("Orders", style: _smallStyle),
                                     ],
                                   ),
@@ -179,41 +150,41 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height:50),
-                    SizedBox.fromSize(
-                      size: const Size(100, 100),
-                      child: ClipOval(
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            //color: Colors.white.withAlpha(50),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(125),
-                              border: Border.all(
-                                color: Colors.white.withAlpha(100),
-                                width: 5,
-                              ),
-                            ),
-                            child: InkWell(
-                              splashColor: Colors.green.withOpacity(0.5),
-                              onTap: () {
-                                debugPrint("SYNC");
-                                _syncData(context);
-                              },
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(FontAwesomeIcons.sync, size: 32, color: Colors.black),
-                                  Text("SYNC", style: _smallStyle),
-                                ],
+                        const SizedBox(width:50),
+                        SizedBox.fromSize(
+                          size: const Size(175, 175),
+                          child: ClipOval(
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(125),
+                                  border: Border.all(
+                                    color: Colors.white.withAlpha(100),
+                                    width: 5,
+                                  ),
+                                ),
+                                child: InkWell(
+                                  splashColor: Colors.green.withOpacity(0.5),
+                                  onTap: () {
+                                    //debugPrint("Printer selected");
+                                    _syncData(context);
+                                  },
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(FontAwesomeIcons.sync, size: 75, color: Colors.black),
+                                      Text("Sync", style: _smallStyle),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
+
                   ],
                 )
             )

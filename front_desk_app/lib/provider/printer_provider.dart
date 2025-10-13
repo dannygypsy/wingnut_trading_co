@@ -68,6 +68,12 @@ class PrinterProvider extends ChangeNotifier {
       double total = element.quantity * element.retail;
       final s = formatReceiptLine("${element.quantity} ${element.name}", "\$${total.toStringAsFixed(2)}");
       list.add(LineText(type: LineText.TYPE_TEXT, content: s, weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
+
+      if (element.customizations.isNotEmpty) {
+        for (var c in element.customizations) {
+          list.add(LineText(type: LineText.TYPE_TEXT, content: cropString("   ${c.position}:${c.name}", 32), weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
+        }
+      }
     }
 
 
@@ -84,7 +90,7 @@ class PrinterProvider extends ChangeNotifier {
     }
     final totalString = formatReceiptLine("TOTAL:", "\$${orderTotal.toStringAsFixed(2)}");
     list.add(LineText(linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: totalString, weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: totalString, weight: 1, align: LineText.ALIGN_LEFT, linefeed: 1));
 
     list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: '********************************', weight: 1, align: LineText.ALIGN_CENTER,linefeed: 1));
@@ -125,5 +131,12 @@ class PrinterProvider extends ChangeNotifier {
     String spaces = ' ' * spacesNeeded.clamp(0, Values.printerWidth);
 
     return leftText + spaces + rightText;
+  }
+
+  String cropString(String text, int maxLength) {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.substring(0, maxLength);
   }
 }

@@ -13,6 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   DatabaseHandler handler = DatabaseHandler();
+  // handler.resetDatabase();  // TODO: Don't leave this in!!
   await handler.initializeDB();
 
   InventoryProvider ip = InventoryProvider();

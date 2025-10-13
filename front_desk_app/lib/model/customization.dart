@@ -1,30 +1,33 @@
 class Customization {
   final String id;
-  final String? orderId;
-  final String? itemId;
-  final String? inventoryId;
-  final String? name;
-  final double? retail;
+  final String orderId;
+  final String itemId;
+  final String inventoryId;
+  final String position;
+  final String name;
+  final double retail;
   final String? notes;
 
   Customization({
     required this.id,
-    this.orderId,
-    this.itemId,
-    this.inventoryId,
-    this.name,
-    this.retail,
+    required this.orderId,
+    required this.itemId,
+    required this.inventoryId,
+    required this.name,
+    required this.retail,
+    required this.position,
     this.notes,
   });
 
   factory Customization.fromMap(Map<String, dynamic> map) {
     return Customization(
       id: map['id'] as String,
-      orderId: map['order_id'] as String?,
-      itemId: map['item_id'] as String?,
-      inventoryId: map['inventory_id'] as String?,
-      name: map['name'] as String?,
-      retail: map['retail'] as double?,
+      orderId: map['order_id']??"" as String?,
+      itemId: map['item_id']??"" as String?,
+      inventoryId: map['inventory_id']??"" as String?,
+      name: map['name']??"" as String?,
+      retail: map['retail']??"0.0" as double?,
+      position: map['position']??"" as String?,
       notes: map['notes'] as String?,
     );
   }
@@ -36,6 +39,7 @@ class Customization {
       'item_id': itemId,
       'inventory_id': inventoryId,
       'name': name,
+      'position': position,
       'retail': retail,
       'notes': notes,
     };
@@ -47,6 +51,7 @@ class Customization {
     String? itemId,
     String? inventoryId,
     String? name,
+    String? position,
     double? retail,
     String? notes,
   }) {
@@ -56,6 +61,7 @@ class Customization {
       itemId: itemId ?? this.itemId,
       inventoryId: inventoryId ?? this.inventoryId,
       name: name ?? this.name,
+      position: position ?? this.position,
       retail: retail ?? this.retail,
       notes: notes ?? this.notes,
     );

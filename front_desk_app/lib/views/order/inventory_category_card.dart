@@ -4,6 +4,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:front_desk_app/model/inventory_item.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:provider/provider.dart';
 import 'inventory_item_card.dart';
@@ -11,7 +12,7 @@ import 'inventory_item_card.dart';
 class InventoryCategoryCard extends StatelessWidget {
 
   final InventoryType type;
-  final Function onItemSelected;
+  final Function(InventoryItem?) onItemSelected;
 
   InventoryCategoryCard({required this.type, required this.onItemSelected});
 
@@ -23,6 +24,8 @@ class InventoryCategoryCard extends StatelessWidget {
     final ip = Provider.of<InventoryProvider>(context, listen: false);
 
     List<Widget> itemCards = [];
+
+
 
     for (var i in ip.getItemsByTypeAndCategory(type)) {
       itemCards.add(InventoryItemCard(item: i, onSelect: onItemSelected));

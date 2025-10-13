@@ -8,10 +8,12 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class OrderReceiptCard extends StatefulWidget {
-  Function onGuestTapped;
-  Function onNotesTapped;
+  final Function onGuestTapped;
+  final Function onNotesTapped;
+  final Function(BuildContext, OrderItem) onItemTapped;
+  final OrderItem ? selectedItem;
 
-  OrderReceiptCard({super.key, required this.onGuestTapped, required this.onNotesTapped});
+  const OrderReceiptCard({super.key, required this.onGuestTapped, required this.onNotesTapped, this.selectedItem, required this.onItemTapped});
 
   @override
   State<StatefulWidget> createState() => OrderReceiptCardState();
@@ -21,6 +23,8 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
 
   final _fontStyle = const TextStyle(fontSize: 24.0, color: Colors.black, fontFamily: 'MerchantCopy', height: 0.8);
   final _boldStyle = const TextStyle(fontSize: 24.0, color: Colors.black, fontFamily: 'MerchantCopy', fontWeight: FontWeight.bold, height: 0.8);
+  final _fontStyleSelected = const TextStyle(fontSize: 24.0, color: Colors.red, fontFamily: 'MerchantCopy', height: 0.8);
+  final _boldStyleSelected = const TextStyle(fontSize: 24.0, color: Colors.red, fontFamily: 'MerchantCopy', fontWeight: FontWeight.bold, height: 0.8);
   List<ReceiptLine> _receipt = [];
 
   @override
@@ -45,7 +49,17 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
                   } else {
                     TextStyle ts = _fontStyle;
                     if (_receipt[i].bold) {
-                      ts = _boldStyle;
+                      if (_receipt[i].selected) {
+                        ts = _boldStyleSelected;
+                      } else {
+                        ts = _boldStyle;
+                      }
+                    } else {
+                      if (_receipt[i].selected) {
+                        ts = _fontStyleSelected;
+                      } else {
+                        ts = _fontStyle;
+                      }
                     }
 
                     if (_receipt[i].text == "--") {
@@ -110,9 +124,15 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
           ReceiptLine(
               text: s,
               centered: false,
-              onTap: () { _orderItemTapped(element); }
+              selected: widget.selectedItem != null && widget.selectedItem!.id == element.id,
+              onTap: () { widget.onItemTapped(context, element); }
           )
       );
+      if (element.customizations != null && element.customizations!.isNotEmpty) {
+        for (var c in element.customizations) {
+          _receipt.add(ReceiptLine(text: pp.cropString("   ${c.position}:${c.name}", 32), centered: false, bold: false));
+        }
+      }
       //}
     }
 
@@ -149,199 +169,7 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
     _receipt.add(ReceiptLine(text:"WINGNUT STABLES!", centered: true, bold:true));
   }
 
-  _orderItemTapped(OrderItem item) {
-    debugPrint("Order item tapped: ${item.name}");
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(item.name ?? 'Order Item'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Quantity: ${item.quantity}'),
-              Text('Price: \$${item.retail?.toStringAsFixed(2) ?? '0.00'}'),
-              Text('Line Total: \$${item.lineTotal.toStringAsFixed(2)}'),
-            ],
-          ),
-          actions: [
-            // Change Quantity
-            TextButton.icon(
-              icon: const Icon(Icons.edit),
-              label: const Text('Change Quantity'),
-              onPressed: () {
-                Navigator.pop(context);
-                _showQuantityDialog(item);
-              },
-            ),
-            // Change Price
-            TextButton.icon(
-              icon: const Icon(Icons.attach_money),
-              label: const Text('Change Price'),
-              onPressed: () {
-                Navigator.pop(context);
-                _showPriceDialog(item);
-              },
-            ),
-            // Remove Item
-            TextButton.icon(
-              icon: const Icon(Icons.delete),
-              label: const Text('Remove'),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () {
-                Navigator.pop(context);
-                _removeItem(item);
-              },
-            ),
-            // Cancel
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showQuantityDialog(OrderItem item) {
-    final TextEditingController quantityController = TextEditingController(
-      text: item.quantity?.toString() ?? '1',
-    );
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Change Quantity'),
-          content: TextField(
-            controller: quantityController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Quantity',
-              hintText: 'Enter quantity',
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: const Text('Update'),
-              onPressed: () {
-                final newQuantity = int.tryParse(quantityController.text);
-                if (newQuantity != null && newQuantity > 0) {
-                  final provider = context.read<OrderProvider>();
-                  provider.updateItemQuantity(item.id, newQuantity);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Quantity updated')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter a valid quantity')),
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showPriceDialog(OrderItem item) {
-    final TextEditingController priceController = TextEditingController(
-      text: item.retail?.toStringAsFixed(2) ?? '0.00',
-    );
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Change Price'),
-          content: TextField(
-            controller: priceController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Price',
-              hintText: 'Enter price',
-              prefixText: '\$',
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: const Text('Update'),
-              onPressed: () {
-                final newPrice = double.tryParse(priceController.text);
-                if (newPrice != null && newPrice >= 0) {
-                  final provider = context.read<OrderProvider>();
-                  final updatedItem = item.copyWith(retail: newPrice);
-                  // You'll need to add this method to OrderProvider
-                  provider.updateItem(updatedItem);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Price updated')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter a valid price')),
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _removeItem(OrderItem item) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Remove Item'),
-          content: Text('Remove ${item.name} from order?'),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: const Text('Remove'),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () {
-                final provider = context.read<OrderProvider>();
-                provider.removeItem(item.id);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${item.name} removed')),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 
 
 
@@ -352,7 +180,8 @@ class ReceiptLine {
   String text = "";
   bool centered = false;
   bool bold = false;
+  bool selected = false;
   Function ? onTap;
 
-  ReceiptLine({this.text = "", this.centered = false, this.bold = false, this.type=1, this.onTap});
+  ReceiptLine({this.text = "", this.centered = false, this.bold = false, this.type=1, this.onTap, this.selected = false});
 }

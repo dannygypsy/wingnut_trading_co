@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:front_desk_app/model/inventory_item.dart';
 import 'package:front_desk_app/model/order.dart';
+import 'package:front_desk_app/model/order_item.dart';
 import 'package:front_desk_app/model/values.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
@@ -14,6 +15,8 @@ import 'package:front_desk_app/util/loading_indicator.dart';
 import 'package:front_desk_app/views/order/inventory_category_card.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'customization_menu.dart';
+import 'inventory_menu.dart';
 import 'order_receipt_card.dart';
 
 class OrderPage extends StatefulWidget {
@@ -28,6 +31,7 @@ class OrderPageState extends State<OrderPage> {
 
   final TextStyle _titleStyle = const TextStyle(fontSize: 36, color: Colors.white);
   final TextEditingController _textController = TextEditingController();
+  OrderItem ? _customizingItem;
 
   @override
   void initState() {
@@ -36,28 +40,7 @@ class OrderPageState extends State<OrderPage> {
 
   @override
   Widget build(BuildContext context) {
-
-    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
     OrderProvider op = Provider.of<OrderProvider>(context, listen: true);
-
-    // Assemble the top inventory list, which is FIRST anything with type blank, then any type that isn't a transfer
-    // Find categories of type BLANK first
-    List<InventoryType> cats = ip.getCategoriesByType("blank");
-
-    // Now add all other categories that aren't transfer
-    for (var type in ip.types) {
-      debugPrint("Checking type ${type}");
-      if (type != "transfer" && type != "blank") {
-        List<InventoryType> tCats = ip.getCategoriesByType(type);
-        for (var c in tCats) {
-          if (!cats.contains(c)) {
-            cats.add(c);
-          }
-        }
-      }
-    }
-
-
 
     return Scaffold(
         extendBodyBehindAppBar: true,
@@ -78,12 +61,24 @@ class OrderPageState extends State<OrderPage> {
                 child: Row(
                     children:[
                       Expanded(
-                        child: ListView.builder(
-                          itemCount: cats.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return InventoryCategoryCard(type: cats[index], onItemSelected: _onSelectedItem,);
-                          }
-                        ),
+                        child: _customizingItem == null
+                            ? InventoryMenu(onSelect: _onSelectedItem)
+                            : CustomizationMenu(
+                                onSelect: (item, position) {
+                                  if (item == null) {
+                                    _removeCustomization(position);
+                                  } else {
+                                    debugPrint("Selected customized item: ${item
+                                        .name}");
+                                    _addCustomization(item, position);
+                                  }
+                                },
+                                onDone: () {
+                                  setState(() {
+                                    _customizingItem = null;
+                                  });
+                                },
+                              )
                       ),
                       SizedBox(width:10),
                       Padding(
@@ -93,7 +88,7 @@ class OrderPageState extends State<OrderPage> {
                               return Column(
                                   children: [
                                     Expanded(
-                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments,),
+                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments, selectedItem: _customizingItem, onItemTapped: _orderItemTapped),
                                     ),
                                     const SizedBox(height: 10),
                                     OverflowBar(
@@ -203,6 +198,19 @@ class OrderPageState extends State<OrderPage> {
 
 
     debugPrint("Saving order...");
+
+    await op.saveOrder();
+
+    debugPrint("Order saved.");
+
+    // Pop back to whatever page this came from
+    Navigator.of(context).pop();
+    
+
+
+
+
+
 
     /*
     Database db = await DatabaseHandler().initializeDB();
@@ -468,7 +476,10 @@ class OrderPageState extends State<OrderPage> {
     op.updateOrderDetails(notes: comments);
   }
 
-  _onSelectedItem(InventoryItem i) {
+  _onSelectedItem(InventoryItem? i) {
+    if (i == null)
+      return;
+
     debugPrint("Selected ${i.name}");
 
     OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
@@ -480,6 +491,9 @@ class OrderPageState extends State<OrderPage> {
     // If this item is of type 'blank', go to the customization screen
     if (i.type == "blank") {
       debugPrint("This is a blank item, so go to customization screen...");
+      setState(() {
+        _customizingItem = op.currentItems.last;
+      });
       //Navigator.push(context, MaterialPageRoute(builder: (context) => CustomizeItemPage(item
     }
   }
@@ -487,6 +501,236 @@ class OrderPageState extends State<OrderPage> {
   _resetOrder() async {
     OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
     op.clearOrder();
+  }
+
+  _orderItemTapped(BuildContext context, OrderItem item) {
+    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
+
+    debugPrint("Order item tapped: ${item.name}");
+
+    // Get the inventory item, see if it's a blank
+    InventoryItem? ii = ip.getItemById(item.inventoryId);
+    bool canCustomize = ii != null && ii.type == 'blank';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(item.name ?? 'Order Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Quantity: ${item.quantity}'),
+              Text('Price: \$${item.retail?.toStringAsFixed(2) ?? '0.00'}'),
+              Text('Line Total: \$${item.lineTotal.toStringAsFixed(2)}'),
+            ],
+          ),
+          actions: [
+            // Customize
+            if (canCustomize)
+              TextButton.icon(
+                icon: const Icon(Icons.build),
+                label: const Text('Customize'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _customizingItem = item;
+                  });
+                },
+              ),
+            // Change Quantity
+            TextButton.icon(
+              icon: const Icon(Icons.edit),
+              label: const Text('Change Quantity'),
+              onPressed: () {
+                Navigator.pop(context);
+                _showQuantityDialog(item);
+              },
+            ),
+            // Change Price
+            TextButton.icon(
+              icon: const Icon(Icons.attach_money),
+              label: const Text('Change Price'),
+              onPressed: () {
+                Navigator.pop(context);
+                _showPriceDialog(item);
+              },
+            ),
+            // Remove Item
+            TextButton.icon(
+              icon: const Icon(Icons.delete),
+              label: const Text('Remove'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: () {
+                Navigator.pop(context);
+                _removeItem(item);
+              },
+            ),
+            // Cancel
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showQuantityDialog(OrderItem item) {
+    final TextEditingController quantityController = TextEditingController(
+      text: item.quantity?.toString() ?? '1',
+    );
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Change Quantity'),
+          content: TextField(
+            controller: quantityController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Quantity',
+              hintText: 'Enter quantity',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: const Text('Update'),
+              onPressed: () {
+                final newQuantity = int.tryParse(quantityController.text);
+                if (newQuantity != null && newQuantity > 0) {
+                  final provider = context.read<OrderProvider>();
+                  provider.updateItemQuantity(item.id, newQuantity);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Quantity updated')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid quantity')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPriceDialog(OrderItem item) {
+    final TextEditingController priceController = TextEditingController(
+      text: item.retail?.toStringAsFixed(2) ?? '0.00',
+    );
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Change Price'),
+          content: TextField(
+            controller: priceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Price',
+              hintText: 'Enter price',
+              prefixText: '\$',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: const Text('Update'),
+              onPressed: () {
+                final newPrice = double.tryParse(priceController.text);
+                if (newPrice != null && newPrice >= 0) {
+                  final provider = context.read<OrderProvider>();
+                  final updatedItem = item.copyWith(retail: newPrice);
+                  // You'll need to add this method to OrderProvider
+                  provider.updateItem(updatedItem);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Price updated')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid price')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _removeItem(OrderItem item) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Remove Item'),
+          content: Text('Remove ${item.name} from order?'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: const Text('Remove'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: () {
+                final provider = context.read<OrderProvider>();
+                provider.removeItem(item.id);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${item.name} removed')),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  _addCustomization(InventoryItem item, String position) {
+    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+    if (_customizingItem == null) return;
+
+    debugPrint("Adding customization ${item.name} to item ${_customizingItem!.name} at position $position");
+
+    op.addCustomizationToItem(itemId: _customizingItem!.id, name: item.name, retail: item.retail, inventoryId: item.id, position: position);
+  }
+
+  _removeCustomization(String position) {
+    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+    if (_customizingItem == null) return;
+
+    debugPrint("Removing customization at position $position from item ${_customizingItem!.name}");
+
+    op.removeCustomizationsByPosition(_customizingItem!.id, position);
   }
 
 

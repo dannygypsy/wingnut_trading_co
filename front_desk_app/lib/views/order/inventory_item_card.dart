@@ -3,16 +3,44 @@ import 'package:front_desk_app/model/inventory_item.dart';
 
 class InventoryItemCard extends StatelessWidget {
 
-  final InventoryItem item;
-  final Function onSelect;
+  final InventoryItem? item;
+  final Function(InventoryItem?) onSelect;
 
-  const InventoryItemCard({required this.item, required this.onSelect});
+  const InventoryItemCard({super.key, required this.item, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
 
+    if (item == null) {
+      // 'None' option
+      return GestureDetector(
+        onTap: () {
+          onSelect(null);
+        },
+        child: SizedBox(
+          width: 150,
+          height: 150,
+          child: Container(
+            decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(
+                  color: const Color.fromARGB(30, 255, 255, 255),
+                ),
+                borderRadius: const BorderRadius.all(Radius.circular(10))
+            ),
+            child: const Center(
+              child: Text(
+                'None',
+                style: TextStyle(fontSize: 20, color: Colors.black54),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     // Convert retail price to string (with 2 decimal places if needed)
-    double price = item.retail ?? 0;
+    double price = item!.retail ?? 0;
     String priceStr = price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2);
     priceStr = "\$$priceStr";
 
@@ -29,7 +57,7 @@ class InventoryItemCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                     image: DecorationImage(
-                      image: NetworkImage(item.imageURL),
+                      image: NetworkImage(item!.imageURL),
                       fit: BoxFit.contain,
                     ),
                     border: Border.all(
@@ -61,7 +89,7 @@ class InventoryItemCard extends StatelessWidget {
                       ),
                       child: Center(
                         child: _buildStrokedText(
-                          item.name ?? 'Unknown',
+                          item!.name ?? 'Unknown',
                           fontSize: 14,
                           maxLines: 3,
                         ),

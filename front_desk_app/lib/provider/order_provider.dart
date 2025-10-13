@@ -98,6 +98,26 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  void cancelOrder() {
+    // Set the status to 'canceled'
+    if (_currentOrder != null) {
+      _currentOrder = _currentOrder!.copyWith(status: 'canceled');
+      // Save
+      saveOrder();
+      notifyListeners();
+    }
+  }
+
+  void restoreOrder() {
+    // Set the status to 'pending'
+    if (_currentOrder != null) {
+      _currentOrder = _currentOrder!.copyWith(status: 'pending');
+      // Save
+      saveOrder();
+      notifyListeners();
+    }
+  }
+
   // Update order details (customer, notes, etc.)
   void updateOrderDetails({String? customer, String? notes, String? createdBy, String? status}) {
     if (_currentOrder == null) return;
@@ -194,7 +214,8 @@ class OrderProvider extends ChangeNotifier {
     required String itemId,
     required String name,
     required double retail,
-    String? inventoryId,
+    required inventoryId,
+    required String position,
     String? notes,
   }) {
     if (_currentOrder == null) {
@@ -205,12 +226,16 @@ class OrderProvider extends ChangeNotifier {
 
     final item = _currentOrder!.items.firstWhere((item) => item.id == itemId);
 
+    // Is there already something else at this position? If so, remove it!
+    item.customizations.removeWhere((custom) => custom.position == position);
+
     final customId = Uuid().v4();
 
     final customization = Customization(
       id: customId,
       orderId: _currentOrder!.id,
       itemId: itemId,
+      position: position,
       inventoryId: inventoryId,
       name: name,
       retail: retail,
@@ -227,6 +252,14 @@ class OrderProvider extends ChangeNotifier {
 
     final item = _currentOrder!.items.firstWhere((item) => item.id == itemId);
     item.customizations.removeWhere((custom) => custom.id == customId);
+    notifyListeners();
+  }
+
+  void removeCustomizationsByPosition(String itemId, String position) {
+    if (_currentOrder == null) return;
+
+    final item = _currentOrder!.items.firstWhere((item) => item.id == itemId);
+    item.customizations.removeWhere((custom) => custom.position == position);
     notifyListeners();
   }
 
