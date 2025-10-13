@@ -5,14 +5,14 @@ class Values {
   static String build = "Unknown";
 
 
-  static const String restAPIHost = "www.groop.zone";
-  static const useSSL = true;
+  //static const String restAPIHost = "www.groop.zone";
+  //static const useSSL = true;
 
-  // static const String restAPIHost = "127.0.0.1:3001";
-  // static const useSSL = false;
+  static const String restAPIHost = "192.168.68.54:3001";
+  static const useSSL = false;
 
 
   static String? authToken;
-  static const String scriptFolder = "/api/wtc_desk";
+  static const String scriptFolder = "/api/wtc";
   static final navigatorKey = GlobalKey<NavigatorState>();
 }

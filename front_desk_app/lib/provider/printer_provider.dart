@@ -52,23 +52,25 @@ class PrinterProvider extends ChangeNotifier {
     //String base64Image = base64Encode(imageBytes);
     //list.add(LineText(type: LineText.TYPE_IMAGE, content: base64Image, align: LineText.ALIGN_CENTER, linefeed: 1));
 
-    list.add(LineText(type: LineText.TYPE_TEXT, content: 'THE GLITTERY PIG', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: '"The bext meat in town!"', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: 'THE WINGNUT TRADING CO.', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'Cameron, North Carolina', weight: 2, align: LineText.ALIGN_CENTER, linefeed: 1));
     list.add(LineText(linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: "- ${o.customerName.toUpperCase()} -", weight: 1, align: LineText.ALIGN_CENTER, linefeed: 1));
+    list.add(LineText(type: LineText.TYPE_TEXT, content: "- ${o.customer?.toUpperCase()} -", weight: 1, align: LineText.ALIGN_CENTER, linefeed: 1));
     list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: '*****************************', weight: 1, align: LineText.ALIGN_CENTER,linefeed: 1));
     list.add(LineText(linefeed: 1));
 
     // Go through the order
-    for (var element in o.items) {
+    /*
+    for (var element in o) {
       list.add(LineText(type: LineText.TYPE_TEXT, content: "${element.num} ${element.name}", weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
     }
 
-    if (o.comments.isNotEmpty) {
+     */
+
+    if (o.notes != null && o.notes!.isNotEmpty) {
       list.add(LineText(linefeed: 1));
-      list.add(LineText(type: LineText.TYPE_TEXT, content: 'COMMENTS: ${o.comments}', weight: 1, align: LineText.ALIGN_LEFT,linefeed: 1));
+      list.add(LineText(type: LineText.TYPE_TEXT, content: 'NOTES: ${o.notes}', weight: 1, align: LineText.ALIGN_LEFT,linefeed: 1));
       list.add(LineText(linefeed: 1));
     }
 
@@ -77,12 +79,11 @@ class PrinterProvider extends ChangeNotifier {
     list.add(LineText(linefeed: 1));
     //list.add(LineText(type: LineText.TYPE_TEXT, content: 'PAYMENT: Free - we love you', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
     DateTime now = DateTime.now();
-    if (o.datetime != null) {
-      now = DateTime.fromMillisecondsSinceEpoch(o.datetime??0);
+    if (o.createdAt != null) {
+      now = DateTime.fromMillisecondsSinceEpoch(o.createdAt??0);
     }
     String formattedDate = DateFormat('dd/MM/yyyy kk:mm').format(now);
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'DATE/TIME: $formattedDate', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
-    list.add(LineText(type: LineText.TYPE_TEXT, content: 'WRISTBAND CODE: ${o.wristbandCode}', weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
     list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'SPRING HUNT 2025', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: 'MAY THE ODDS BE IN YOUR FAVOR!', weight: 1, align: LineText.ALIGN_CENTER, fontZoom: 2,linefeed: 1));

@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:front_desk_app/model/values.dart';
+import 'package:front_desk_app/provider/inventory_provider.dart';
+import 'package:front_desk_app/provider/order_provider.dart' show OrderProvider;
 import 'package:provider/provider.dart';
 
 import 'provider/printer_provider.dart';
@@ -13,11 +15,17 @@ void main() async {
   DatabaseHandler handler = DatabaseHandler();
   await handler.initializeDB();
 
-  runApp(MyApp());
+  InventoryProvider ip = InventoryProvider();
+  await ip.loadItems();
+
+  runApp(MyApp(ip));
 }
 
 
 class MyApp extends StatelessWidget {
+  final InventoryProvider inventoryProvider;
+  MyApp(this.inventoryProvider);
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -55,6 +63,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => PrinterProvider()),
+          ChangeNotifierProvider(create: (context) => OrderProvider()),
+          ChangeNotifierProvider(create: (context) => inventoryProvider),
         ],
         child: MaterialApp(
           home: HomeScreen(),

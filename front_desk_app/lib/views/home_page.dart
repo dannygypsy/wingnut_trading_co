@@ -4,6 +4,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:front_desk_app/provider/inventory_provider.dart';
+import 'package:front_desk_app/util/comms.dart';
+import 'package:front_desk_app/util/db.dart';
+import 'package:front_desk_app/util/dialogs.dart';
+import 'package:front_desk_app/views/order/order_page.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
 
@@ -55,7 +62,8 @@ class HomeScreen extends StatelessWidget {
                             child: InkWell(
                               splashColor: Colors.green.withOpacity(0.5),
                               onTap: () {
-                                debugPrint("SCAN");
+                                debugPrint("NEW ORDER");
+                                Navigator.push(context,MaterialPageRoute(builder: (context) => const OrderPage()),);
                               },
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -120,7 +128,7 @@ class HomeScreen extends StatelessWidget {
                                 child: InkWell(
                                   splashColor: Colors.green.withOpacity(0.5),
                                   onTap: () {
-                                    debugPrint("Menu selected");
+                                    debugPrint("New  selected");
                                   },
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -166,13 +174,106 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                       ],
-                    )
+                    ),
+                    const SizedBox(height:50),
+                    SizedBox.fromSize(
+                      size: const Size(100, 100),
+                      child: ClipOval(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            //color: Colors.white.withAlpha(50),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(125),
+                              border: Border.all(
+                                color: Colors.white.withAlpha(100),
+                                width: 5,
+                              ),
+                            ),
+                            child: InkWell(
+                              splashColor: Colors.green.withOpacity(0.5),
+                              onTap: () {
+                                debugPrint("SYNC");
+                                _syncData(context);
+                              },
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(FontAwesomeIcons.sync, size: 32, color: Colors.black),
+                                  Text("SYNC", style: _smallStyle),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 )
             )
         )
 
     );
+  }
+
+  Future<void> _syncData(BuildContext context) async {
+    // Implement your data synchronization logic here
+    final results = await remoteGet('sync', {});
+
+    if (results.success == false || results.data == null) {
+      // Handle error
+      if (context.mounted) {
+        errorDialog(context, results.message);
+      }
+      debugPrint("Error during sync: ${results.message}");
+      return;
+    }
+
+    Map m = results.data as Map<String, dynamic>;
+    // Look for 'inventory', a List of inventory items
+    List? inventoryList = m['inventory'] as List?;
+    if (inventoryList != null) {
+      // Process each inventory item
+      for (var item in inventoryList) {
+        // Assuming item is a Map<String, dynamic>
+        Map<String, dynamic> inventoryItem = item as Map<String, dynamic>;
+        // Here you would insert or update the inventory item in your local database
+
+        Database db = await DatabaseHandler().initializeDB();
+        // Clear the inventory table before inserting new data
+        await db.insert(
+            'inventory',
+            {
+              'id': inventoryItem['id'],
+              'type': inventoryItem['type'],
+              'name': inventoryItem['name'],
+              'full_name': inventoryItem['full_name'],
+              'category': inventoryItem['category'],
+              'cost': inventoryItem['cost'],
+              'retail': inventoryItem['retail'],
+              'image': inventoryItem['image'],
+              'purchased_on': inventoryItem['purchased_on'],
+              'num_purchased': inventoryItem['num_purchased'],
+              'remaining': inventoryItem['remaining'],
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+
+        debugPrint("Inventory item: $inventoryItem");
+      }
+    }
+
+    // Force the provider to refresh its data
+    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
+    ip.refresh();
+
+
+    if (context.mounted) {
+      successDialog(context, "Data synchronized successfully");
+    }
+
+
+    debugPrint("Data synchronized");
   }
 
 }

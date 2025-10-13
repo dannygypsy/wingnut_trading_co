@@ -1,42 +1,76 @@
-
-import 'package:flutter/material.dart';
-import 'package:front_desk_app/util/db.dart';
-import 'package:sqflite/sqflite.dart';
-import 'order_item.dart';
-
 class Order {
-  int? id;
-  int? datetime;
-  String wristbandCode;
-  String customerName;
-  List<OrderItem> items = [];
-  String comments = "";
+  final String id;
+  final String? customer;
+  final String? notes;
+  final int? createdAt;  // milliseconds since epoch
+  final String? createdBy;
+  final double? total;
+  final String? status;
 
+  Order({
+    required this.id,
+    this.customer,
+    this.notes,
+    this.createdAt,
+    this.createdBy,
+    this.total,
+    this.status,
+  });
 
-  Order({required this.wristbandCode, required this.customerName, this.id, this.datetime});
-
-  Order.fromMap(Map<String, dynamic> res)
-      : id = res["id"],
-        datetime = res["datetime"],
-        wristbandCode = res["wristband_code"],
-        customerName = res["customer_name"],
-        comments = res["comments"];
-
-  loadItems() async {
-    items = [];
-
-    //debugPrint("Loading the order items...");
-
-    Database db = await DatabaseHandler().initializeDB();
-
-    final List<Map<String, dynamic>> sl = await db.query('order_items', where: "order_id=?", whereArgs: [id] );
-
-    for (var element in sl) {
-      OrderItem ms = OrderItem.fromMap(element);
-      items.add(ms);
-    }
-
-    return true;
+  // Convert from database map to Order
+  factory Order.fromMap(Map<String, dynamic> map) {
+    return Order(
+      id: map['id'] as String,
+      customer: map['customer'] as String?,
+      notes: map['notes'] as String?,
+      createdAt: map['created_at'] as int?,
+      createdBy: map['created_by'] as String?,
+      total: map['total'] as double?,
+      status: map['status'] as String?,
+    );
   }
 
+  // Convert from Order to database map
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'customer': customer,
+      'notes': notes,
+      'created_at': createdAt,
+      'created_by': createdBy,
+      'total': total,
+      'status': status,
+    };
+  }
+
+  // Create a copy with modified fields
+  Order copyWith({
+    String? id,
+    String? customer,
+    String? notes,
+    int? createdAt,
+    String? createdBy,
+    double? total,
+    String? status,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      customer: customer ?? this.customer,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      total: total ?? this.total,
+      status: status ?? this.status,
+    );
+  }
+
+  // Helper to get DateTime from createdAt
+  DateTime? get createdAtDate {
+    return createdAt != null ? DateTime.fromMillisecondsSinceEpoch(createdAt!) : null;
+  }
+
+  @override
+  String toString() {
+    return 'Order{id: $id, customer: $customer, status: $status, total: $total}';
+  }
 }

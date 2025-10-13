@@ -17,8 +17,9 @@ Future<CallResults> remoteGet(String script, Map<String, String> args) async {
 
   Response response;
   Dio dio = Dio();
-  if (Values.authToken != null)
+  if (Values.authToken != null) {
     dio.options.headers = {'Authorization' : Values.authToken};
+  }
 
   var uri = Uri.http(Values.restAPIHost, "${Values.scriptFolder}/$script");
   if (Values.useSSL) {
@@ -26,7 +27,7 @@ Future<CallResults> remoteGet(String script, Map<String, String> args) async {
   }
   //var uri = Uri.https(Values.restAPIHost, "${Values.scriptFolder}/$script");
 
-  //print("GET...${uri2.toString()}");
+  print("GET...${uri.toString()}");
 
   bool _success;
   try {
