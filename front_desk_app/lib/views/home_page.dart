@@ -4,6 +4,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:front_desk_app/model/customization.dart';
+import 'package:front_desk_app/model/order.dart';
+import 'package:front_desk_app/model/order_item.dart';
 import 'package:front_desk_app/model/values.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
@@ -301,13 +304,15 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future<void> _downloadInventory(BuildContext context) async {
+    final op = Provider.of<OrderProvider>(context, listen: false);
+
     // Show loading overlay
     showDialog(
       context: context,
-      barrierDismissible: false,  // Prevent dismissing by tapping outside
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return WillPopScope(
-          onWillPop: () async => false,  // Prevent back button dismiss
+          onWillPop: () async => false,
           child: Center(
             child: Container(
               padding: const EdgeInsets.all(20),
@@ -328,17 +333,13 @@ class HomeScreen extends StatelessWidget {
     );
 
     try {
-      // Implement your data synchronization logic here
+      // Download inventory from server
       final results = await remoteGet('sync', {});
 
-      // Dismiss loading overlay
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
-
       if (results.success == false || results.data == null) {
-        // Handle error
+        // Dismiss loading overlay
         if (context.mounted) {
+          Navigator.of(context).pop();
           errorDialog(context, results.message);
         }
         debugPrint("Error during sync: ${results.message}");
@@ -346,17 +347,15 @@ class HomeScreen extends StatelessWidget {
       }
 
       Map m = results.data as Map<String, dynamic>;
-      // Look for 'inventory', a List of inventory items
       List? inventoryList = m['inventory'] as List?;
-      if (inventoryList != null) {
-        // Process each inventory item
-        for (var item in inventoryList) {
-          // Assuming item is a Map<String, dynamic>
-          Map<String, dynamic> inventoryItem = item as Map<String, dynamic>;
-          // Here you would insert or update the inventory item in your local database
 
-          Database db = await DatabaseHandler().initializeDB();
-          // Clear the inventory table before inserting new data
+      if (inventoryList != null) {
+        Database db = await DatabaseHandler().initializeDB();
+
+        // Insert/update inventory items with fresh counts from server
+        for (var item in inventoryList) {
+          Map<String, dynamic> inventoryItem = item as Map<String, dynamic>;
+
           await db.insert(
             'inventory',
             {
@@ -373,8 +372,66 @@ class HomeScreen extends StatelessWidget {
             },
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
+        }
 
-          //debugPrint("Inventory item: $inventoryItem");
+        // Dismiss first dialog
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+
+        // Show recalculating dialog
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return WillPopScope(
+                onWillPop: () async => false,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        const Text('Recalculating order inventory...'),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+        // Re-subtract inventory for all non-canceled orders
+        final List<Map<String, dynamic>> orderMaps = await db.query(
+          'orders',
+          where: 'status != ?',
+          whereArgs: ['canceled'],
+        );
+
+        debugPrint("Re-calculating inventory for ${orderMaps.length} active orders...");
+
+        for (var orderMap in orderMaps) {
+          Order order = Order.fromMap(orderMap);
+          await op.loadOrder(order.id);
+          await op.removeOrderInventory(op.currentOrder!);
+        }
+
+        // Dismiss recalculating dialog
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      } else {
+        // No inventory list - just dismiss the loading dialog
+        if (context.mounted) {
+          Navigator.of(context).pop();
         }
       }
 
@@ -388,11 +445,12 @@ class HomeScreen extends StatelessWidget {
 
       debugPrint("Data synchronized");
     } catch (e) {
-      // Dismiss loading overlay on error
+      // Dismiss loading overlay on error - use popUntil to clear all dialogs
       if (context.mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).popUntil((route) => route is! DialogRoute);
         errorDialog(context, "Sync failed: $e");
       }
+      debugPrint("Error in _downloadInventory: $e");
     }
   }
 

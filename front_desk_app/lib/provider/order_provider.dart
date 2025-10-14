@@ -341,6 +341,129 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+
+
+  Future<bool> removeOrderInventory(Order order) async {
+    debugPrint('Removing inventory for order ${order.id}...');
+    try {
+      Database db = await DatabaseHandler().initializeDB();
+
+      // First pass: Check if we have enough inventory for everything
+      for (OrderItem item in order.items) {
+
+        // Check main item inventory
+        if (item.inventoryId.isNotEmpty) {
+          final inventoryCheck = await db.query(
+            'inventory',
+            where: 'id = ?',
+            whereArgs: [item.inventoryId],
+          );
+
+          if (inventoryCheck.isNotEmpty) {
+            int remaining = inventoryCheck[0]['remaining'] as int? ?? 0;
+            int needed = item.quantity;
+
+            if (remaining < needed) {
+              debugPrint('WARNING: Insufficient inventory for ${item.name}: need $needed, have $remaining');
+              //return false;
+            }
+          }
+        }
+
+        // Check customization inventory
+        for (Customization custom in item.customizations) {
+          if (custom.inventoryId.isNotEmpty) {
+            final inventoryCheck = await db.query(
+              'inventory',
+              where: 'id = ?',
+              whereArgs: [custom.inventoryId],
+            );
+
+            if (inventoryCheck.isNotEmpty) {
+              int remaining = inventoryCheck[0]['remaining'] as int? ?? 0;
+              int needed = item.quantity; // Customizations apply per item quantity
+
+              if (remaining < needed) {
+                debugPrint('WARNING: Insufficient inventory for customization ${custom.name}: need $needed, have $remaining');
+                // return false;
+              }
+            }
+          }
+        }
+      }
+
+      // Second pass: Actually subtract the inventory
+      for (OrderItem item in order.items) {
+        // Subtract main item inventory
+        if (item.inventoryId.isNotEmpty) {
+          await db.rawUpdate(
+            'UPDATE inventory SET remaining = remaining - ? WHERE id = ?',
+            [item.quantity, item.inventoryId],
+          );
+          debugPrint('Subtracted ${item.quantity} from inventory ${item.inventoryId} (${item.name})');
+        }
+
+        // Subtract customization inventory
+        for (Customization custom in item.customizations) {
+          if (custom.inventoryId.isNotEmpty) {
+            await db.rawUpdate(
+              'UPDATE inventory SET remaining = remaining - ? WHERE id = ?',
+              [item.quantity, custom.inventoryId],
+            );
+            debugPrint('Subtracted ${item.quantity} from inventory ${custom.inventoryId} (${custom.name})');
+          }
+        }
+      }
+
+      debugPrint('Successfully removed inventory for order ${order.id}');
+      return true;
+
+    } catch (e) {
+      debugPrint('Error removing inventory for order ${order.id}: $e');
+      return false;
+    }
+  }
+
+  /// Restores inventory for all items and customizations in an order (adds back)
+  /// Used when canceling or refunding an order
+  /// Returns true if successful
+  Future<bool> restoreOrderInventory(Order order) async {
+    debugPrint('Re-storing inventory for order ${order.id}');
+    try {
+      Database db = await DatabaseHandler().initializeDB();
+
+      // Restore inventory by adding back quantities
+      for (OrderItem item in order.items) {
+        // Restore main item inventory
+        if (item.inventoryId.isNotEmpty) {
+          await db.rawUpdate(
+            'UPDATE inventory SET remaining = remaining + ? WHERE id = ?',
+            [item.quantity, item.inventoryId],
+          );
+          debugPrint('Restored ${item.quantity} to inventory ${item.inventoryId} (${item.name})');
+        }
+
+        // Restore customization inventory
+        for (Customization custom in item.customizations) {
+          if (custom.inventoryId.isNotEmpty) {
+            await db.rawUpdate(
+              'UPDATE inventory SET remaining = remaining + ? WHERE id = ?',
+              [item.quantity, custom.inventoryId],
+            );
+            debugPrint('Restored ${item.quantity} to inventory ${custom.inventoryId} (${custom.name})');
+          }
+        }
+      }
+
+      debugPrint('Successfully restored inventory for order ${order.id}');
+      return true;
+
+    } catch (e) {
+      debugPrint('Error restoring inventory for order ${order.id}: $e');
+      return false;
+    }
+  }
+
   // Clear current order (without saving)
   void clearOrder() {
     // clear all items from the current order AND the note

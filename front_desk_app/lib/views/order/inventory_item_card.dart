@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:front_desk_app/model/inventory_item.dart';
+import 'package:front_desk_app/provider/inventory_provider.dart';
+import 'package:provider/provider.dart';
 
 class InventoryItemCard extends StatelessWidget {
 
@@ -39,89 +41,91 @@ class InventoryItemCard extends StatelessWidget {
       );
     }
 
-    // Convert retail price to string (with 2 decimal places if needed)
-    double price = item!.retail ?? 0;
-    String priceStr = price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2);
-    priceStr = "\$$priceStr";
+    // Listen to inventory changes to get real-time updates
+    return Consumer<InventoryProvider>(
+      builder: (context, inventoryProvider, child) {
+        // Get the latest version of this item from the provider
+        InventoryItem? currentItem = inventoryProvider.items.firstWhere(
+              (i) => i.id == item!.id,
+          orElse: () => item!,
+        );
 
-    int remaining = item!.remaining ?? 0;
+        // Convert retail price to string (with 2 decimal places if needed)
+        double price = currentItem.retail ?? 0;
+        String priceStr = price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2);
+        priceStr = "\$$priceStr";
 
-    return GestureDetector(
-      onTap: () {
-        onSelect(item);
-      },
-      child: SizedBox(
-        width: 150,
-        height: 150,
-        child: Stack(
-            children: <Widget>[
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                    image: DecorationImage(
-                      image: NetworkImage(item!.imageURL),
-                      fit: BoxFit.contain,
-                    ),
-                    border: Border.all(
-                      color: const Color.fromARGB(30, 255, 255, 255),
-                    ),
-                    borderRadius: const BorderRadius.all(Radius.circular(10))
-                ),
-                child: const SizedBox(height: 150, width: 150),
-              ),
+        int remaining = currentItem.remaining ?? 0;
 
-              // Item name at bottom with gradient background
-              Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8.0),
-                        //gradient: LinearGradient(
-                        //    begin: Alignment.topCenter,
-                        //    end: Alignment.bottomCenter,
-                        //    colors: <Color>[
-                        //      Colors.black.withAlpha(0),
-                        //      Colors.black45,
-                        //      Colors.black87
-                        //    ]
-                        //)
-                      ),
-                      child: Center(
-                        child: _buildStrokedText(
-                          item!.name ?? 'Unknown',
-                          fontSize: 14,
-                          maxLines: 3,
+        return GestureDetector(
+          onTap: () {
+            onSelect(currentItem);
+          },
+          child: SizedBox(
+            width: 150,
+            height: 150,
+            child: Stack(
+                children: <Widget>[
+                  Container(
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        image: DecorationImage(
+                          image: NetworkImage(currentItem.imageURL),
+                          fit: BoxFit.contain,
                         ),
-                      )
-                  )
-              ),
-              // # at top left
-              Positioned(
-                top: 5,
-                left: 5,
-                child: _buildStrokedText(
-                  remaining.toString(),
-                  fontSize: 14,
-                  maxLines: 1,
-                ),
-              ),
+                        border: Border.all(
+                          color: const Color.fromARGB(30, 255, 255, 255),
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10))
+                    ),
+                    child: const SizedBox(height: 150, width: 150),
+                  ),
 
-              // Price at top right
-              Positioned(
-                top: 5,
-                right: 5,
-                child: _buildStrokedText(
-                  priceStr,
-                  fontSize: 14,
-                  maxLines: 1,
-                ),
-              ),
-            ]
-        ),
-      ),
+                  // Item name at bottom with gradient background
+                  Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          child: Center(
+                            child: _buildStrokedText(
+                              currentItem.name ?? 'Unknown',
+                              fontSize: 14,
+                              maxLines: 3,
+                            ),
+                          )
+                      )
+                  ),
+                  // # at top left
+                  Positioned(
+                    top: 5,
+                    left: 5,
+                    child: _buildStrokedText(
+                      remaining.toString(),
+                      fontSize: 14,
+                      maxLines: 1,
+                    ),
+                  ),
+
+                  // Price at top right
+                  Positioned(
+                    top: 5,
+                    right: 5,
+                    child: _buildStrokedText(
+                      priceStr,
+                      fontSize: 14,
+                      maxLines: 1,
+                    ),
+                  ),
+                ]
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -190,6 +190,12 @@ class OrderPageState extends State<OrderPage> {
 
   Future<bool> _saveOrder() async {
     OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
+
+    if (op.currentOrder == null) {
+      await errorDialog(context, "No current order to save.");
+      return false;
+    }
 
 
     debugPrint("Saving order...");
@@ -198,46 +204,15 @@ class OrderPageState extends State<OrderPage> {
 
     debugPrint("Order saved.");
 
+    await op.removeOrderInventory(op.currentOrder!);
+    await ip.refresh();
+
+    debugPrint("Order inventory removed.");
+
+
+
     // Pop back to whatever page this came from
     Navigator.of(context).pop();
-
-
-
-
-
-
-
-    /*
-    Database db = await DatabaseHandler().initializeDB();
-
-    DateTime now = DateTime.now();
-    int dtn = now.millisecondsSinceEpoch;
-
-    int id = await db.insert(
-        'orders',
-        {
-          'customer_name': op.order!.customerName,
-          'datetime': dtn,
-          'wristband_code': op.order!.wristbandCode,
-          'comments': op.order!.comments
-        }
-      //conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    // Insert the items now
-    for (var element in op.order!.items) {
-      await db.insert(
-          'order_items',
-          {
-            'order_id': id,
-            'item_name': element.name,
-            'num': element.num
-          }
-        //conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-
-     */
 
     return true;
   }

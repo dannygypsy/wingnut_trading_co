@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:front_desk_app/model/inventory_item.dart';
 import 'package:front_desk_app/util/db.dart';
+import 'package:sqflite/sqflite.dart';
 
 class InventoryType {
   String type;
@@ -22,7 +23,7 @@ class InventoryProvider extends ChangeNotifier {
   List<String> get types {
     final types = <String>{};
     for (var item in _items) {
-      debugPrint('Item type: ${item.type}');
+      //debugPrint('Item type: ${item.type}');
       types.add(item.type);
     }
     return types.toList();

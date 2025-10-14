@@ -21,7 +21,7 @@ class InventoryCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    final ip = Provider.of<InventoryProvider>(context, listen: false);
+    final ip = Provider.of<InventoryProvider>(context, listen: true);
 
     List<Widget> itemCards = [];
 

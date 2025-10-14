@@ -21,7 +21,7 @@ class InventoryMenu extends StatelessWidget {
 
     // Now add all other categories that aren't transfer
     for (var type in ip.types) {
-      debugPrint("Checking type ${type}");
+      //debugPrint("Checking type ${type}");
       if (type != "transfer" && type != "blank") {
         List<InventoryType> tCats = ip.getCategoriesByType(type);
         for (var c in tCats) {

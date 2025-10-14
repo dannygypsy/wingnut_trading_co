@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
 import 'package:front_desk_app/provider/printer_provider.dart';
 import 'package:front_desk_app/util/dialogs.dart';
@@ -102,35 +103,7 @@ class OrderReviewPage extends StatelessWidget {
                                 }
                             ),
                           ),
-                          Material( //Wrap with Material
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                    10.0)),
-                            elevation: 18.0,
-                            color: Colors.red,
-                            clipBehavior: Clip.antiAlias,
-                            // Add This
-                            child: MaterialButton(
-                                child: Text(op.currentOrder!.status == "canceled" ? 'RESTORE ORDER' : 'CANCEL ORDER'),
-                                onPressed: () {
-                                  if (op.currentOrder!.status == "canceled") {
-                                    op.restoreOrder();
-                                    Navigator.pop(context);
-                                    return;
-                                  } else if (op.currentOrder!.status == "completed") {
-                                      errorDialog(context, "You cannot cancel a completed order.");
-                                      return;
-                                  } else if (op.currentOrder!.status == "refunded") {
-                                      errorDialog(context, "You cannot cancel a refunded order.");
-                                      return;
 
-                                  } else {
-                                    // proceed to cancel
-                                    _cancelOrder(context);
-                                  }
-                                }
-                            ),
-                          )
                         ],
                       )
                     ]
@@ -143,6 +116,8 @@ class OrderReviewPage extends StatelessWidget {
 
   _statusDialog(BuildContext context) async {
     OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
+
     String? newStatus = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
@@ -165,10 +140,6 @@ class OrderReviewPage extends StatelessWidget {
               onPressed: () { Navigator.pop(context, 'canceled'); },
               child: const Text('Canceled', style: TextStyle(color: Colors.red)),
             ),
-            SimpleDialogOption(
-              onPressed: () { Navigator.pop(context, 'refunded'); },
-              child: const Text('Refunded', style: TextStyle(color: Colors.red)),
-            ),
             //SimpleDialogOption(
             //  onPressed: () { Navigator.pop(context); },
             //  child: const Text('Cancel'),
@@ -179,7 +150,29 @@ class OrderReviewPage extends StatelessWidget {
     );
 
     if (newStatus != null && newStatus != op.currentOrder!.status) {
-      op.updateOrderStatus(newStatus);
+      String oldStatus = op.currentOrder!.status ?? 'pending';
+
+      // Check if changing TO canceled (restore inventory)
+      if (newStatus == 'canceled' && oldStatus != 'canceled') {
+        await op.restoreOrderInventory(op.currentOrder!);
+        await ip.refresh();
+      }
+
+      // Check if changing FROM canceled to anything else (remove inventory)
+      if (oldStatus == 'canceled' && newStatus != 'canceled') {
+        bool success = await op.removeOrderInventory(op.currentOrder!);
+        if (!success) {
+          // Insufficient inventory - show error and don't change status
+          errorDialog(context, "Insufficient inventory to restore this order");
+          return;
+        }
+        await ip.refresh();
+      }
+
+      // Update the order status
+      await op.updateOrderStatus(newStatus);
+
+
     }
   }
 
