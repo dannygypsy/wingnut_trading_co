@@ -27,16 +27,16 @@ Future<CallResults> remoteGet(String script, Map<String, String> args) async {
   }
   //var uri = Uri.https(Values.restAPIHost, "${Values.scriptFolder}/$script");
 
-  print("GET...${uri.toString()}");
+  //print("GET...${uri.toString()}");
 
   bool _success;
   try {
-    debugPrint("Loading...${uri.toString()}");
+    //debugPrint("Loading...${uri.toString()}");
 
     //await dio.post("/test", data: {"id": 12, "name": "wendu"});
     response = await dio.get(uri.toString(), queryParameters: args);
     if (response.statusCode == HttpStatus.ok) {
-      debugPrint("Result:${response.data.toString()}");
+      //debugPrint("Result:${response.data.toString()}");
       _success = response.data['success'];
       results.message = response.data['message'];
 
@@ -61,23 +61,31 @@ Future<CallResults> remoteGet(String script, Map<String, String> args) async {
   return results;
 }
 
-Future<CallResults> remotePost(String script, Map<String, String> args) async {
+Future<CallResults> remotePost(String script, Map<String, dynamic> args) async {
 
   CallResults results = CallResults();
 
   Response response;
-  Dio dio = new Dio();
+  Dio dio = Dio();
   if (Values.authToken != null)
     dio.options.headers = {'Authorization' : Values.authToken};
 
-  var uri = new Uri.https(Values.restAPIHost, script);
+  // Add Content-Type header for JSON
+  dio.options.headers['Content-Type'] = 'application/json';
+
+  var uri = Uri.http(Values.restAPIHost, "${Values.scriptFolder}/$script");
+  if (Values.useSSL) {
+    uri = Uri.https(Values.restAPIHost, "${Values.scriptFolder}/$script");
+  }
 
   bool _success;
   try {
     debugPrint("Loading...${uri.toString()}");
-    response = await dio.post(uri.toString(), queryParameters: args);
+
+    // Use 'data' parameter instead of 'queryParameters' for POST body
+    response = await dio.post(uri.toString(), data: args);
+
     if (response.statusCode == HttpStatus.ok) {
-      //debugPrint("Result:${response.data.toString()}");
       _success = response.data['success'];
       results.message = response.data['message'];
 
@@ -107,111 +115,6 @@ Future<CallResults> remotePost(String script, Map<String, String> args) async {
 
   return results;
 }
-
-Future<CallResults> remotePut(String script, Map<String, String> args) async {
-
-  CallResults results = CallResults();
-
-  Response response;
-  Dio dio = new Dio();
-  if (Values.authToken != null)
-    dio.options.headers = {'Authorization' : Values.authToken};
-
-  var uri = new Uri.https(Values.restAPIHost, script);
-
-  //print("GET...${uri2.toString()}");
-
-  try {
-    debugPrint("Loading...${uri.toString()}");
-
-    //await dio.post("/test", data: {"id": 12, "name": "wendu"});
-    response = await dio.put(uri.toString(), queryParameters: args);
-
-    if (response.statusCode == HttpStatus.ok) {
-      debugPrint("Result:${response.data.toString()}");
-      results.success = true;
-      results.data = response.data;
-    } else {
-      results.message = "An internal error occurred at our server. Please report this error.";
-    }
-  } catch (exception) {
-    debugPrint("COMMS EXCEPTION: $exception");
-    results.message = "A communications error occurred. Is your device online?";
-  }
-
-  return results;
-}
-
-Future<CallResults> remotePatch(String script, Map<String, Object> args) async {
-
-  CallResults results = CallResults();
-
-  Response response;
-  Dio dio = new Dio();
-  if (Values.authToken != null)
-    dio.options.headers = {'Authorization' : Values.authToken};
-
-  var uri = new Uri.https(Values.restAPIHost, script);
-
-  //print("GET...${uri2.toString()}");
-
-  bool _success;
-  String? _msg;
-  try {
-    debugPrint("Loading...${uri.toString()}");
-
-    //await dio.post("/test", data: {"id": 12, "name": "wendu"});
-    response = await dio.patch(uri.toString(), queryParameters: args);
-    if (response.statusCode == HttpStatus.ok) {
-      debugPrint("Result:${response.data.toString()}");
-      results.success = true;
-      results.data = response.data;
-    } else {
-      results.message = "An internal error occurred at our server. Please report this error.";
-    }
-  } catch (exception) {
-    debugPrint("COMMS EXCEPTION: $exception");
-    results.message = "A communications error occurred. Is your device online?";
-  }
-
-  return results;
-}
-
-Future<CallResults> remoteDelete(String script, Map<String, Object> args) async {
-
-  CallResults results = CallResults();
-
-  Response response;
-  Dio dio = new Dio();
-  if (Values.authToken != null)
-    dio.options.headers = {'Authorization' : Values.authToken};
-
-  var uri = new Uri.https(Values.restAPIHost, script);
-
-  //print("GET...${uri2.toString()}");
-
-  bool _success;
-  String? _msg;
-  try {
-    debugPrint("Loading...${uri.toString()}");
-
-    //await dio.post("/test", data: {"id": 12, "name": "wendu"});
-    response = await dio.delete(uri.toString(), queryParameters: args);
-    if (response.statusCode == HttpStatus.ok) {
-      debugPrint("Result:${response.data.toString()}");
-      results.success = true;
-      results.data = response.data;
-    } else {
-      results.message = "An internal error occurred at our server. Please report this error.";
-    }
-  } catch (exception) {
-    debugPrint("COMMS EXCEPTION: $exception");
-    results.message = "A communications error occurred. Is your device online?";
-  }
-
-  return results;
-}
-
 
 num asNum(var v) {
   num n;

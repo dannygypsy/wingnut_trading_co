@@ -4,6 +4,7 @@ import 'package:front_desk_app/model/inventory_item.dart';
 import 'package:front_desk_app/model/order.dart';
 import 'package:front_desk_app/model/order_item.dart';
 import 'package:front_desk_app/util/db.dart';
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
@@ -27,7 +28,7 @@ class OrderProvider extends ChangeNotifier {
 
   // Start a new order
   Future<void> startNewOrder({String? customer, String? notes, String? createdBy}) async {
-    final orderId = await DatabaseHandler().generateOrderNumber();
+    final orderId = await _generateOrderId();
 
     _currentOrder = Order(
       id: orderId,
@@ -374,5 +375,37 @@ class OrderProvider extends ChangeNotifier {
       orElse: () => OrderItem(id: '', orderId: '', inventoryId: '', name: '', retail: 0, quantity: 0)
     );
     return item.quantity ?? 0;
+  }
+
+  Future<String> _generateOrderId() async {
+    Database db = await DatabaseHandler().initializeDB();
+
+    // Get today's date
+    String today = DateFormat('yyyyMMdd').format(DateTime.now());
+
+    // Get or create counter for today
+    List<Map> result = await db.query(
+        'wtc_order_counter',
+        where: 'date = ?',
+        whereArgs: [today]
+    );
+
+    int nextNumber;
+    if (result.isEmpty) {
+      // First order of the day
+      nextNumber = 1;
+      await db.insert('wtc_order_counter', {'date': today, 'last_order_number': 1});
+    } else {
+      // Increment counter
+      nextNumber = result[0]['last_order_number'] + 1;
+      await db.update(
+          'wtc_order_counter',
+          {'last_order_number': nextNumber},
+          where: 'date = ?',
+          whereArgs: [today]
+      );
+    }
+
+    return 'WTC-$today-${nextNumber.toString().padLeft(3, '0')}';
   }
 }

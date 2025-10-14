@@ -65,20 +65,14 @@ class DatabaseHandler {
           )''',
         );
 
+        await database.execute('''CREATE TABLE wtc_order_counter (
+              date DATE PRIMARY KEY,
+              last_order_number INT DEFAULT 0
+          );''',
+        );
       },
       version: 1,
     );
-  }
-
-  Future<String> generateOrderNumber() async {
-    final db = await DatabaseHandler().initializeDB();
-
-    // Get the count of existing orders
-    final result = await db.rawQuery('SELECT COUNT(*) as count FROM orders');
-    int count = Sqflite.firstIntValue(result) ?? 0;
-
-    // Generate order number like: ORD-0001, ORD-0002, etc.
-    return 'WTC-${(count + 1).toString().padLeft(4, '0')}';
   }
 
   // Method to clear/reset the entire database

@@ -17,4 +17,6 @@ class Values {
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   static int printerWidth = 32;
+
+  static bool locked = true;
 }
