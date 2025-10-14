@@ -1,20 +1,15 @@
 
-import 'package:after_layout/after_layout.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:front_desk_app/model/inventory_item.dart';
-import 'package:front_desk_app/model/order.dart';
 import 'package:front_desk_app/model/order_item.dart';
 import 'package:front_desk_app/model/values.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
 import 'package:front_desk_app/provider/printer_provider.dart';
 import 'package:front_desk_app/util/dialogs.dart';
-import 'package:front_desk_app/util/loading_indicator.dart';
-import 'package:front_desk_app/views/order/inventory_category_card.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 import 'customization_menu.dart';
 import 'inventory_menu.dart';
 import 'order_receipt_card.dart';
@@ -205,7 +200,7 @@ class OrderPageState extends State<OrderPage> {
 
     // Pop back to whatever page this came from
     Navigator.of(context).pop();
-    
+
 
 
 

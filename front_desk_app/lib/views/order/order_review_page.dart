@@ -13,7 +13,7 @@ class OrderReviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+    OrderProvider op = Provider.of<OrderProvider>(context, listen: true);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -49,6 +49,40 @@ class OrderReviewPage extends StatelessWidget {
                           onGuestTapped: () {},
                         ),
                       ),
+                      const SizedBox(height:20),
+                      // Status
+                      Material(
+                        child: InkWell(
+                          onTap: () {
+                            _statusDialog(context);
+                          },
+                          borderRadius: BorderRadius.circular(10.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10.0),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4.0,
+                                  spreadRadius: 1.0,
+                                  offset: Offset(2.0, 2.0), // shadow direction: bottom right
+                                )
+                              ],
+                            ),
+                            child: Text(
+                              "Status: ${op.currentOrder!.status!.toUpperCase()}",
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        )
+                      ),
+                      const SizedBox(height:20),
                       ButtonBar(
                         mainAxisSize: MainAxisSize.min,
                         // this will take space as minimum as posible(to center)
@@ -105,6 +139,48 @@ class OrderReviewPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  _statusDialog(BuildContext context) async {
+    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+    String? newStatus = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: const Text('Select Order Status'),
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'pending'); },
+              child: const Text('Pending', style: TextStyle(color: Colors.yellow)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'completed'); },
+              child: const Text('Completed', style: TextStyle(color: Colors.teal)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'delivered'); },
+              child: const Text('Delivered', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'canceled'); },
+              child: const Text('Canceled', style: TextStyle(color: Colors.red)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'refunded'); },
+              child: const Text('Refunded', style: TextStyle(color: Colors.red)),
+            ),
+            //SimpleDialogOption(
+            //  onPressed: () { Navigator.pop(context); },
+            //  child: const Text('Cancel'),
+            //),
+          ],
+        );
+      },
+    );
+
+    if (newStatus != null && newStatus != op.currentOrder!.status) {
+      op.updateOrderStatus(newStatus);
+    }
   }
 
   _reprint(BuildContext context) async {

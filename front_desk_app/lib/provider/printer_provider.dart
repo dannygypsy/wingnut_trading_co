@@ -64,8 +64,20 @@ class PrinterProvider extends ChangeNotifier {
 
     // Go through the order
 
+    double orderTotal = 0.0;
+
     for (var element in o.items) {
-      double total = element.quantity * element.retail;
+
+      double price = element.retail??0;
+      if (element.customizations != null && element.customizations!.isNotEmpty) {
+        for (var c in element.customizations) {
+          price += (c.retail??0);
+        }
+      }
+
+      double total = element.quantity * price;
+      orderTotal += total;
+
       final s = formatReceiptLine("${element.quantity} ${element.name}", "\$${total.toStringAsFixed(2)}");
       list.add(LineText(type: LineText.TYPE_TEXT, content: s, weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
 
@@ -83,11 +95,6 @@ class PrinterProvider extends ChangeNotifier {
       list.add(LineText(type: LineText.TYPE_TEXT, content: 'NOTES: ${o.notes}', weight: 1, align: LineText.ALIGN_LEFT,linefeed: 1));
     }
 
-    // Total
-    double orderTotal = 0.0;
-    for (var element in o.items) {
-      orderTotal += element.quantity * element.retail;
-    }
     final totalString = formatReceiptLine("TOTAL:", "\$${orderTotal.toStringAsFixed(2)}");
     list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: totalString, weight: 1, align: LineText.ALIGN_LEFT, linefeed: 1));

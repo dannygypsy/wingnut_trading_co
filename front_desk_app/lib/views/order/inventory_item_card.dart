@@ -44,6 +44,8 @@ class InventoryItemCard extends StatelessWidget {
     String priceStr = price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2);
     priceStr = "\$$priceStr";
 
+    int remaining = item!.remaining ?? 0;
+
     return GestureDetector(
       onTap: () {
         onSelect(item);
@@ -95,6 +97,16 @@ class InventoryItemCard extends StatelessWidget {
                         ),
                       )
                   )
+              ),
+              // # at top left
+              Positioned(
+                top: 5,
+                left: 5,
+                child: _buildStrokedText(
+                  remaining.toString(),
+                  fontSize: 14,
+                  maxLines: 1,
+                ),
               ),
 
               // Price at top right

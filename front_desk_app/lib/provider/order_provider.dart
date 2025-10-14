@@ -263,6 +263,14 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateOrderStatus(String status) async {
+    if (_currentOrder == null) return;
+
+    _currentOrder = _currentOrder!.copyWith(status: status);
+    notifyListeners();
+    await saveOrder();
+  }
+
   // Save current order to database
   Future<String> saveOrder() async {
     if (_currentOrder == null) {

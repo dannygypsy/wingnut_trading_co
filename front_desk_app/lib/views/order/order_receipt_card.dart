@@ -116,7 +116,15 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
       //if (element.num > 1) {
       //  _receipt.add(ReceiptLine(text: "${element.name} (${element.num})", centered: false));
       //} else {
-      double total = (element.quantity??1) * (element.retail??0);
+      // Retail is the price of the item PLUS the price of ALL the customizations
+      double price = element.retail??0;
+      if (element.customizations != null && element.customizations!.isNotEmpty) {
+        for (var c in element.customizations) {
+          price += (c.retail??0);
+        }
+      }
+      double total = (element.quantity??1) * price;
+
       totalAll += total;
       final s = pp.formatReceiptLine("${element.quantity} ${element.name}", "\$${total.toStringAsFixed(2)}");
       debugPrint("Receipt line: $s");

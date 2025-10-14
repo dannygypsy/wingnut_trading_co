@@ -36,6 +36,7 @@ class DatabaseHandler {
           created_by TEXT,
           total REAL,
           status TEXT
+          synced INTEGER DEFAULT 0
           )''',
         );
 
@@ -46,8 +47,7 @@ class DatabaseHandler {
           name TEXT,
           retail REAL,
           quantity INTEGER,
-          FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-          FOREIGN KEY (inventory_id) REFERENCES inventory(id) ON DELETE SET NULL
+          FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
           )''',
         );
 
@@ -61,7 +61,6 @@ class DatabaseHandler {
           retail REAL,
           notes TEXT,
           FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-          FOREIGN KEY (inventory_id) REFERENCES inventory(id) ON DELETE SET NULL,
           FOREIGN KEY (item_id) REFERENCES order_items(id) ON DELETE CASCADE
           )''',
         );
