@@ -8,6 +8,7 @@ class Order {
   final String? createdBy;
   final double? total;
   final String? status;
+  final String? paymentMethod;
 
   List<OrderItem> items = [];
 
@@ -23,6 +24,7 @@ class Order {
     this.createdBy,
     this.total,
     this.status,
+    this.paymentMethod,
     List<OrderItem>? items,
   }) : items = items ?? [];
 
@@ -36,6 +38,7 @@ class Order {
       createdBy: map['created_by'] as String?,
       total: map['total'] as double?,
       status: map['status'] as String?,
+      paymentMethod: map['payment_method'] as String?,
       items: items,
     );
   }
@@ -50,6 +53,7 @@ class Order {
       'created_by': createdBy,
       'total': total,
       'status': status,
+      'payment_method': paymentMethod,
     };
   }
 
@@ -62,6 +66,7 @@ class Order {
     String? createdBy,
     double? total,
     String? status,
+    String? paymentMethod,
     List<OrderItem>? items,
   }) {
     return Order(
@@ -72,6 +77,7 @@ class Order {
       createdBy: createdBy ?? this.createdBy,
       total: total ?? this.total,
       status: status ?? this.status,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       items: items ?? this.items,
     );
   }
@@ -95,6 +101,6 @@ class Order {
 
   @override
   String toString() {
-    return 'Order{id: $id, customer: $customer, status: $status, total: $total, items: ${items.length}}';
+    return 'Order{id: $id, customer: $customer, status: $status, total: $total, payment method: $paymentMethod, items: ${items.length}}';
   }
 }

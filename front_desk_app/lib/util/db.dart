@@ -35,7 +35,8 @@ class DatabaseHandler {
           created_at INTEGER,
           created_by TEXT,
           total REAL,
-          status TEXT
+          status TEXT,
+          payment_method TEXT,
           synced INTEGER DEFAULT 0
           )''',
         );
@@ -71,7 +72,16 @@ class DatabaseHandler {
           );''',
         );
       },
-      version: 1,
+      onUpgrade: (database, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // Add payment_method column to orders table
+          await database.execute(
+              'ALTER TABLE orders ADD COLUMN payment_method TEXT'
+          );
+          debugPrint("Database upgraded to version 2: Added payment_method column");
+        }
+      },
+      version: 2,
     );
   }
 

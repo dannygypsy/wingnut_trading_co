@@ -10,10 +10,11 @@ import 'package:intl/intl.dart';
 class OrderReceiptCard extends StatefulWidget {
   final Function onGuestTapped;
   final Function onNotesTapped;
+  final Function onPaymentTapped;
   final Function(BuildContext, OrderItem) onItemTapped;
   final OrderItem ? selectedItem;
 
-  const OrderReceiptCard({super.key, required this.onGuestTapped, required this.onNotesTapped, this.selectedItem, required this.onItemTapped});
+  const OrderReceiptCard({super.key, required this.onGuestTapped, required this.onNotesTapped, this.selectedItem, required this.onItemTapped, required this.onPaymentTapped});
 
   @override
   State<StatefulWidget> createState() => OrderReceiptCardState();
@@ -155,7 +156,11 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
     _receipt.add(ReceiptLine(text:" "));
     final totalString = pp.formatReceiptLine("TOTAL:", "\$${totalAll.toStringAsFixed(2)}");
     _receipt.add(ReceiptLine(text: totalString, centered: false, bold:true));
-
+    String paymentMethod = op.currentOrder!.paymentMethod??"not paid";
+    final paymentString = pp.formatReceiptLine("PAYMENT:", paymentMethod.toUpperCase());
+    _receipt.add(ReceiptLine(text: paymentString, centered: false, bold:true, onTap: () {
+      widget.onPaymentTapped();
+    }));
 
     // Bottom
     DateTime now = DateTime.now();

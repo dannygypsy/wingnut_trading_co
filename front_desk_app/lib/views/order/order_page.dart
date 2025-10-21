@@ -83,7 +83,7 @@ class OrderPageState extends State<OrderPage> {
                               return Column(
                                   children: [
                                     Expanded(
-                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments, selectedItem: _customizingItem, onItemTapped: _orderItemTapped),
+                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments, selectedItem: _customizingItem, onItemTapped: _orderItemTapped, onPaymentTapped: _payment,),
                                     ),
                                     const SizedBox(height: 10),
                                     OverflowBar(
@@ -137,6 +137,24 @@ class OrderPageState extends State<OrderPage> {
                                             minWidth: 50,  // Add this
                                             height: 50,    // Add this
                                             padding: EdgeInsets.zero,
+                                            child: Icon(FontAwesomeIcons.dollarSign),
+                                            onPressed: () {
+                                              _payment();
+                                            },
+                                          ),
+                                        ),
+                                        Material( //Wrap with Material
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                  10.0)),
+                                          elevation: 18.0,
+                                          color: Colors.blueGrey,
+                                          clipBehavior: Clip.antiAlias,
+                                          // Add This
+                                          child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
                                             child: Icon(FontAwesomeIcons.noteSticky),
                                             onPressed: () {
                                               _comments();
@@ -156,7 +174,7 @@ class OrderPageState extends State<OrderPage> {
                                             height: 50,    // Add this
                                             padding: EdgeInsets.zero,
                                             child: Icon(FontAwesomeIcons.print),
-                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty ? _printOrder : null,
+                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _printOrder : null,
                                           ),
                                         ),
                                         Material( //Wrap with Material
@@ -172,7 +190,7 @@ class OrderPageState extends State<OrderPage> {
                                             height: 50,    // Add this
                                             padding: EdgeInsets.zero,
                                             child: Icon(FontAwesomeIcons.save),
-                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty ? _saveOrder : null,
+                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _saveOrder : null,
                                           ),
                                         )
                                       ],
@@ -337,6 +355,58 @@ class OrderPageState extends State<OrderPage> {
           );
         }
     );
+  }
+
+  _payment() async {
+    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+
+    String? newPayment = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: const Text('Select Payment Method'),
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'not paid'); },
+              child: const Text('Not Paid', style: TextStyle(color: Colors.red)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'cash'); },
+              child: const Text('Cash', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'venmo'); },
+              child: const Text('Venmo', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'cashapp'); },
+              child: const Text('CashApp', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'zelle'); },
+              child: const Text('Zelle', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'comped'); },
+              child: const Text('Comped', style: TextStyle(color: Colors.yellow)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'other'); },
+              child: const Text('Other', style: TextStyle(color: Colors.green)),
+            ),
+            //SimpleDialogOption(
+            //  onPressed: () { Navigator.pop(context); },
+            //  child: const Text('Cancel'),
+            //),
+          ],
+        );
+      },
+    );
+
+    if (newPayment != null) {
+      debugPrint("Changing payment method to $newPayment");
+      op.updateOrderDetails(paymentMethod: newPayment);
+    }
   }
 
   _customer() async {

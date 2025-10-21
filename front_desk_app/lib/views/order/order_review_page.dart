@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:front_desk_app/model/values.dart';
 import 'package:front_desk_app/provider/inventory_provider.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
 import 'package:front_desk_app/provider/printer_provider.dart';
@@ -15,6 +16,7 @@ class OrderReviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
 
     OrderProvider op = Provider.of<OrderProvider>(context, listen: true);
+    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -48,6 +50,7 @@ class OrderReviewPage extends StatelessWidget {
                           onItemTapped: (context, i) {},
                           onNotesTapped: () {},
                           onGuestTapped: () {},
+                          onPaymentTapped: () {},
                         ),
                       ),
                       const SizedBox(height:20),
@@ -84,6 +87,38 @@ class OrderReviewPage extends StatelessWidget {
                         )
                       ),
                       const SizedBox(height:20),
+                      Material(
+                          child: InkWell(
+                            onTap: () {
+                              _paymentDialog(context);
+                            },
+                            borderRadius: BorderRadius.circular(10.0),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10.0),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4.0,
+                                    spreadRadius: 1.0,
+                                    offset: Offset(2.0, 2.0), // shadow direction: bottom right
+                                  )
+                                ],
+                              ),
+                              child: Text(
+                                "Payment: ${op.currentOrder!.paymentMethod??"Not Paid".toUpperCase()}",
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          )
+                      ),
+                      const SizedBox(height:20),
                       ButtonBar(
                         mainAxisSize: MainAxisSize.min,
                         // this will take space as minimum as posible(to center)
@@ -103,6 +138,33 @@ class OrderReviewPage extends StatelessWidget {
                                 }
                             ),
                           ),
+                          if (Values.locked == false)
+                            Material( //Wrap with Material
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      10.0)),
+                              elevation: 18.0,
+                              color: Colors.red,
+                              clipBehavior: Clip.antiAlias,
+                              // Add This
+                              child: MaterialButton(
+                                  child: const Text('DELETE ORDER'),
+                                  onPressed: () async {
+                                    bool? confirm = await confirmDialog(
+                                        c: context,
+                                        message: "Are you sure you want to delete this order? This action cannot be undone.",
+                                        cancel: "Don't Delete",
+                                        ok: "Delete Order");
+                                    if (confirm ?? false) {
+                                      await op.restoreOrderInventory(op.currentOrder!);
+                                      await ip.refresh();
+                                      op.deleteOrder(op.currentOrder!.id);
+                                      Navigator.pop(context);
+                                    }
+                                  }
+                              ),
+                            ),
+
 
                         ],
                       )
@@ -174,6 +236,60 @@ class OrderReviewPage extends StatelessWidget {
 
 
     }
+  }
+
+  _paymentDialog(BuildContext context) async {
+    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+    InventoryProvider ip = Provider.of<InventoryProvider>(context, listen: false);
+
+    String? newPayment = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: const Text('Select Payment Method'),
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'not paid'); },
+              child: const Text('Not Paid', style: TextStyle(color: Colors.red)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'cash'); },
+              child: const Text('Cash', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'venmo'); },
+              child: const Text('Venmo', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'cashapp'); },
+              child: const Text('CashApp', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'zelle'); },
+              child: const Text('Zelle', style: TextStyle(color: Colors.green)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'comped'); },
+              child: const Text('Comped', style: TextStyle(color: Colors.yellow)),
+            ),
+            SimpleDialogOption(
+              onPressed: () { Navigator.pop(context, 'other'); },
+              child: const Text('Other', style: TextStyle(color: Colors.green)),
+            ),
+            //SimpleDialogOption(
+            //  onPressed: () { Navigator.pop(context); },
+            //  child: const Text('Cancel'),
+            //),
+          ],
+        );
+      },
+    );
+
+    if (newPayment != null && newPayment != op.currentOrder!.paymentMethod) {
+      // Update the order payment method
+      await op.updateOrderPaymentMethod(newPayment);
+    }
+
   }
 
   _reprint(BuildContext context) async {

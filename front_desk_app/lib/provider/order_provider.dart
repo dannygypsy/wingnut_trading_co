@@ -38,6 +38,7 @@ class OrderProvider extends ChangeNotifier {
       createdBy: createdBy,
       total: 0,
       status: 'pending',
+      paymentMethod: 'not paid',
       items: [],
     );
     _error = null;
@@ -120,7 +121,7 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Update order details (customer, notes, etc.)
-  void updateOrderDetails({String? customer, String? notes, String? createdBy, String? status}) {
+  void updateOrderDetails({String? customer, String? notes, String? createdBy, String? status, String? paymentMethod}) {
     if (_currentOrder == null) return;
 
     _currentOrder = _currentOrder!.copyWith(
@@ -128,6 +129,7 @@ class OrderProvider extends ChangeNotifier {
       notes: notes ?? _currentOrder!.notes,
       createdBy: createdBy ?? _currentOrder!.createdBy,
       status: status ?? _currentOrder!.status,
+      paymentMethod: paymentMethod ?? _currentOrder!.paymentMethod,
     );
 
     notifyListeners();
@@ -268,6 +270,14 @@ class OrderProvider extends ChangeNotifier {
     if (_currentOrder == null) return;
 
     _currentOrder = _currentOrder!.copyWith(status: status);
+    notifyListeners();
+    await saveOrder();
+  }
+
+  Future<void> updateOrderPaymentMethod(String paymentMethod) async {
+    if (_currentOrder == null) return;
+
+    _currentOrder = _currentOrder!.copyWith(paymentMethod: paymentMethod);
     notifyListeners();
     await saveOrder();
   }
@@ -530,5 +540,17 @@ class OrderProvider extends ChangeNotifier {
     }
 
     return 'WTC-$today-${nextNumber.toString().padLeft(3, '0')}';
+  }
+
+  deleteOrder(String orderId) async {
+    Database db = await DatabaseHandler().initializeDB();
+
+    await db.delete(
+      'orders',
+      where: 'id = ?',
+      whereArgs: [orderId],
+    );
+
+    // Related items and customizations will be deleted automatically due to foreign key constraints
   }
 }

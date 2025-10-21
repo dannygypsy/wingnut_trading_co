@@ -119,10 +119,23 @@ class OrderListPageState extends State<OrderListPage> {
       leading = const Icon(Icons.pending, color: Colors.yellow, size: 40.0,);
     }
 
+    if (_orders[index].paymentMethod == null || _orders[index].paymentMethod == "" || _orders[index].paymentMethod == "not paid") {
+      leading = Stack(
+        children: [
+          leading,
+          const Positioned(
+            right: 0,
+            bottom: 0,
+            child: Icon(Icons.warning, color: Colors.red, size: 20.0,),
+          )
+        ],
+      );
+    }
     return ListTile(
       leading: leading,
       title: Text("ORDER #${_orders[index].id} - ${_orders[index].customer}", style: _titleFont),
       subtitle: Text("${_orders[index].items.length} items, on ${formattedDate}", style: _dekFont),
+
       trailing: const Icon(Icons.navigate_next, color: Colors.black,),
       onTap: () async {
         await op.loadOrder(_orders[index].id);

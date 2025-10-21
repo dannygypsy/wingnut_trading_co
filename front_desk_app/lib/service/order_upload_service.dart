@@ -73,6 +73,7 @@ class OrderUploadService {
       'created_at': order.createdAt,
       'created_by': order.createdBy,
       'total': order.total,
+      'payment_method': order.paymentMethod,
       'status': order.status,
       'items': order.items.map((item) => _orderItemToJson(item)).toList(),
     };
