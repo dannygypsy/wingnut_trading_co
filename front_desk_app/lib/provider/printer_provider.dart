@@ -99,8 +99,7 @@ class PrinterProvider extends ChangeNotifier {
     list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_TEXT, content: totalString, weight: 1, align: LineText.ALIGN_LEFT, linefeed: 1));
 
-    final paymentString = formatReceiptLine("PAYMENT:", "\$${o.paymentMethod?.toUpperCase()??"NOT PAID"}");
-    list.add(LineText(linefeed: 1));
+    final paymentString = formatReceiptLine("PAYMENT:", "${o.paymentMethod?.toUpperCase()??"NOT PAID"}");
     list.add(LineText(type: LineText.TYPE_TEXT, content: paymentString, weight: 1, align: LineText.ALIGN_LEFT, linefeed: 1));
 
     list.add(LineText(linefeed: 1));
