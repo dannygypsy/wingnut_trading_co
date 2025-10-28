@@ -44,7 +44,7 @@ class Order {
       status: map['status'] as String?,
       paymentMethod: map['payment_method'] as String?,
       discountDesc: map['discount_desc'] as String?,
-      discountPercent: map['discount_amount'] as double?,
+      discountPercent: map['discount_percent'] as double?,
       items: items,
     );
   }
@@ -61,7 +61,7 @@ class Order {
       'status': status,
       'payment_method': paymentMethod,
       'discount_desc': discountDesc,
-      'discount_amount': discountPercent,
+      'discount_percent': discountPercent,
     };
   }
 

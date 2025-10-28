@@ -157,7 +157,7 @@ class OrderPageState extends State<OrderPage> {
                                             padding: EdgeInsets.zero,
                                             child: Icon(FontAwesomeIcons.tags),
                                             onPressed: () {
-                                              //_discount();
+                                              _custom();
                                             },
                                           ),
                                         ),
@@ -410,6 +410,96 @@ class OrderPageState extends State<OrderPage> {
                   )
           );
         }
+    );
+  }
+
+
+  void _custom() {
+    final TextEditingController descriptionController = TextEditingController();
+    final TextEditingController priceController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add Custom Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  //hintText: "Character Name",
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    label: Text("Description"),
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    //prefixIcon: icon,
+                    counterText: '',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0))
+                ),
+
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: priceController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  //hintText: "Character Name",
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    label: Text("Price"),
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    //prefixIcon: icon,
+                    prefixText: '\$',
+                    counterText: '',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0))
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: const Text('Add'),
+              onPressed: () {
+                final description = descriptionController.text.trim();
+                final price = double.tryParse(priceController.text);
+
+                if (description.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a description')),
+                  );
+                  return;
+                }
+
+                if (price == null || price < 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid price')),
+                  );
+                  return;
+                }
+
+                final provider = context.read<OrderProvider>();
+                provider.addCustomItem(
+                  name: description,
+                  retail: price,
+                );
+
+                Navigator.pop(context);
+                //ScaffoldMessenger.of(context).showSnackBar(
+                //  SnackBar(content: Text('Added $description')),
+                //);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

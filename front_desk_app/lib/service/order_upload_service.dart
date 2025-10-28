@@ -75,6 +75,8 @@ class OrderUploadService {
       'total': order.total,
       'payment_method': order.paymentMethod,
       'status': order.status,
+      'discount_desc': order.discountDesc,
+      'discount_percent': order.discountPercent,
       'items': order.items.map((item) => _orderItemToJson(item)).toList(),
     };
   }

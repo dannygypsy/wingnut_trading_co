@@ -64,7 +64,7 @@ class PrinterProvider extends ChangeNotifier {
 
     // Go through the order
 
-    double orderTotal = 0.0;
+    double orderTotal = o.calculateTotal();
 
     for (var element in o.items) {
 
@@ -76,7 +76,6 @@ class PrinterProvider extends ChangeNotifier {
       }
 
       double total = element.quantity * price;
-      orderTotal += total;
 
       final s = formatReceiptLine("${element.quantity} ${element.name}", "\$${total.toStringAsFixed(2)}");
       list.add(LineText(type: LineText.TYPE_TEXT, content: s, weight: 2, align: LineText.ALIGN_LEFT, linefeed: 1));
@@ -95,8 +94,19 @@ class PrinterProvider extends ChangeNotifier {
       list.add(LineText(type: LineText.TYPE_TEXT, content: 'NOTES: ${o.notes}', weight: 1, align: LineText.ALIGN_LEFT,linefeed: 1));
     }
 
-    final totalString = formatReceiptLine("TOTAL:", "\$${orderTotal.toStringAsFixed(2)}");
     list.add(LineText(linefeed: 1));
+
+    if (o.discountDesc != null && o.discountDesc!.isNotEmpty) {
+
+      final subtotal = o.calculateSubtotal();
+      final subtotalString = formatReceiptLine("SUBTOTAL:", "\$${subtotal.toStringAsFixed(2)}");
+      list.add(LineText(type: LineText.TYPE_TEXT, content: subtotalString, weight: 1, align: LineText.ALIGN_LEFT, linefeed: 1));
+
+      final discountString = formatReceiptLine("DISCOUNT (${o.discountDesc}):", "-\$${(subtotal * (o.discountPercent??0) / 100).toStringAsFixed(2)}");
+      list.add(LineText(type: LineText.TYPE_TEXT, content: discountString, weight: 1, align: LineText.ALIGN_LEFT, linefeed: 1));
+    }
+
+    final totalString = formatReceiptLine("TOTAL:", "\$${orderTotal.toStringAsFixed(2)}");
     list.add(LineText(type: LineText.TYPE_TEXT, content: totalString, weight: 1, align: LineText.ALIGN_LEFT, linefeed: 1));
 
     final paymentString = formatReceiptLine("PAYMENT:", "${o.paymentMethod?.toUpperCase()??"NOT PAID"}");

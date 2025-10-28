@@ -564,4 +564,22 @@ class OrderProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  void addCustomItem({required String name, required double retail}) {
+    if (currentOrder == null) return;
+
+    final customItem = OrderItem(
+      id: Uuid().v4(), // Generate unique ID
+      orderId: currentOrder!.id,
+      inventoryId: 'custom', // Set to 'custom' as requested
+      name: name,
+      retail: retail,
+      quantity: 1,
+      customizations: [],
+    );
+
+    currentOrder!.items.add(customItem);
+
+    notifyListeners();
+  }
 }
