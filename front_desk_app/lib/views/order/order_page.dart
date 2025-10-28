@@ -27,17 +27,87 @@ class OrderPageState extends State<OrderPage> {
   final TextStyle _titleStyle = const TextStyle(fontSize: 36, color: Colors.white);
   final TextEditingController _textController = TextEditingController();
   OrderItem ? _customizingItem;
+  bool _hasUnsavedChanges = false;  // Add this
 
   @override
   void initState() {
     super.initState();
+    // Listen to OrderProvider changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final op = Provider.of<OrderProvider>(context, listen: false);
+      op.addListener(_onOrderChanged);
+    });
+  }
+
+  @override
+  void dispose() {
+    //final op = Provider.of<OrderProvider>(context, listen: false);
+    //op.removeListener(_onOrderChanged);
+    super.dispose();
+  }
+
+  void _onOrderChanged() {
+    if (!_hasUnsavedChanges) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+  }
+
+  void _markAsSaved() {
+    setState(() {
+      _hasUnsavedChanges = false;
+    });
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_hasUnsavedChanges) {
+      return true; // Allow navigation
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Unsaved Changes'),
+          content: const Text('You have unsaved changes. Are you sure you want to leave?'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context, false); // Don't leave
+              },
+            ),
+            TextButton(
+              child: const Text('Leave'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: () {
+                Navigator.pop(context, true); // Allow leaving
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false; // If dialog is dismissed, don't leave
   }
 
   @override
   Widget build(BuildContext context) {
     OrderProvider op = Provider.of<OrderProvider>(context, listen: true);
 
-    return Scaffold(
+    return PopScope(  // Wrap Scaffold with PopScope (or WillPopScope for older Flutter)
+      canPop: !_hasUnsavedChanges,
+      onPopInvoked: (bool didPop) async {
+        if (didPop) return;
+
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: const Color(0x00000000),
@@ -259,6 +329,7 @@ class OrderPageState extends State<OrderPage> {
                 )
             )
         )
+      )
     );
   }
 
