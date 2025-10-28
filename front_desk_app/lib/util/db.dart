@@ -36,6 +36,8 @@ class DatabaseHandler {
           created_by TEXT,
           total REAL,
           status TEXT,
+          discount_desc TEXT,
+          discount_percent REAL DEFAULT 0,
           payment_method TEXT,
           synced INTEGER DEFAULT 0
           )''',
@@ -73,15 +75,18 @@ class DatabaseHandler {
         );
       },
       onUpgrade: (database, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
+        if (oldVersion < 3) {
           // Add payment_method column to orders table
           await database.execute(
-              'ALTER TABLE orders ADD COLUMN payment_method TEXT'
+              'ALTER TABLE orders ADD COLUMN discount_desc TEXT'
           );
-          debugPrint("Database upgraded to version 2: Added payment_method column");
+          await database.execute(
+              'ALTER TABLE orders ADD COLUMN discount_percent REAL DEFAULT 0'
+          );
+          debugPrint("Database upgraded to version 3: Added discount columns to orders table");
         }
       },
-      version: 2,
+      version: 3,
     );
   }
 

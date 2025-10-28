@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:front_desk_app/model/order.dart';
 import 'package:front_desk_app/model/order_item.dart';
 import 'package:front_desk_app/provider/order_provider.dart';
 import 'package:front_desk_app/provider/printer_provider.dart';
@@ -11,10 +12,11 @@ class OrderReceiptCard extends StatefulWidget {
   final Function onGuestTapped;
   final Function onNotesTapped;
   final Function onPaymentTapped;
+  final Function onDiscountTapped;
   final Function(BuildContext, OrderItem) onItemTapped;
   final OrderItem ? selectedItem;
 
-  const OrderReceiptCard({super.key, required this.onGuestTapped, required this.onNotesTapped, this.selectedItem, required this.onItemTapped, required this.onPaymentTapped});
+  const OrderReceiptCard({super.key, required this.onGuestTapped, required this.onNotesTapped, this.selectedItem, required this.onItemTapped, required this.onPaymentTapped, required this.onDiscountTapped});
 
   @override
   State<StatefulWidget> createState() => OrderReceiptCardState();
@@ -95,7 +97,7 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
     OrderProvider op = Provider.of<OrderProvider>(context, listen: true);
     PrinterProvider pp = Provider.of<PrinterProvider>(context, listen: false);
 
-    double totalAll = 0.0;
+    Order o = op.currentOrder!;
 
     // Header
     _receipt = [];
@@ -126,7 +128,6 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
       }
       double total = (element.quantity??1) * price;
 
-      totalAll += total;
       final s = pp.formatReceiptLine("${element.quantity} ${element.name}", "\$${total.toStringAsFixed(2)}");
       debugPrint("Receipt line: $s");
       _receipt.add(
@@ -145,7 +146,7 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
       //}
     }
 
-    if (op.currentOrder!.notes != null && op.currentOrder!.notes!.isNotEmpty) {
+    if (o.notes != null && o.notes!.isNotEmpty) {
       _receipt.add(ReceiptLine(text:" "));
       _receipt.add(ReceiptLine(text: "NOTES: ${op.currentOrder!.notes}", centered: false, onTap: () {
         widget.onNotesTapped();
@@ -154,7 +155,21 @@ class OrderReceiptCardState extends State<OrderReceiptCard> {
 
 
     _receipt.add(ReceiptLine(text:" "));
-    final totalString = pp.formatReceiptLine("TOTAL:", "\$${totalAll.toStringAsFixed(2)}");
+
+    if (o.discountDesc != null && o.discountDesc!.isNotEmpty) {
+      final subtotal = o.calculateSubtotal();
+
+      final subtotalString = pp.formatReceiptLine("SUBTOTAL:", "\$${subtotal.toStringAsFixed(2)}");
+      _receipt.add(ReceiptLine(text: subtotalString, centered: false, bold:true));
+
+      final discountString = pp.formatReceiptLine("DISCOUNT (${o.discountDesc}):", "-\$${(subtotal * (o.discountPercent??0) / 100).toStringAsFixed(2)}");
+      _receipt.add(ReceiptLine(text: discountString, centered: false, bold:true, onTap: () {
+        widget.onDiscountTapped();
+      }));
+    }
+
+
+    final totalString = pp.formatReceiptLine("TOTAL:", "\$${o.calculateTotal().toStringAsFixed(2)}");
     _receipt.add(ReceiptLine(text: totalString, centered: false, bold:true));
     String paymentMethod = op.currentOrder!.paymentMethod??"not paid";
     final paymentString = pp.formatReceiptLine("PAYMENT:", paymentMethod.toUpperCase());

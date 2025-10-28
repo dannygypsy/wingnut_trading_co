@@ -9,6 +9,8 @@ class Order {
   final double? total;
   final String? status;
   final String? paymentMethod;
+  final String? discountDesc;
+  final double? discountPercent;
 
   List<OrderItem> items = [];
 
@@ -25,6 +27,8 @@ class Order {
     this.total,
     this.status,
     this.paymentMethod,
+    this.discountPercent,
+    this.discountDesc,
     List<OrderItem>? items,
   }) : items = items ?? [];
 
@@ -39,6 +43,8 @@ class Order {
       total: map['total'] as double?,
       status: map['status'] as String?,
       paymentMethod: map['payment_method'] as String?,
+      discountDesc: map['discount_desc'] as String?,
+      discountPercent: map['discount_amount'] as double?,
       items: items,
     );
   }
@@ -54,6 +60,8 @@ class Order {
       'total': total,
       'status': status,
       'payment_method': paymentMethod,
+      'discount_desc': discountDesc,
+      'discount_amount': discountPercent,
     };
   }
 
@@ -67,6 +75,8 @@ class Order {
     double? total,
     String? status,
     String? paymentMethod,
+    String? discountDesc,
+    double? discountPercent,
     List<OrderItem>? items,
   }) {
     return Order(
@@ -78,6 +88,8 @@ class Order {
       total: total ?? this.total,
       status: status ?? this.status,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      discountDesc: discountDesc ?? this.discountDesc,
+      discountPercent: discountPercent ?? this.discountPercent,
       items: items ?? this.items,
     );
   }
@@ -87,11 +99,23 @@ class Order {
     return createdAt != null ? DateTime.fromMillisecondsSinceEpoch(createdAt!) : null;
   }
 
+  double calculateSubtotal() {
+    double subtotal = 0;
+    for (var item in items) {
+      subtotal += item.lineTotal;
+    }
+    return subtotal;
+  }
+
   // Calculate total from items (which includes their customizations)
   double calculateTotal() {
     double total = 0;
     for (var item in items) {
       total += item.lineTotal;
+    }
+    // Factor in the discount amount if any (percentage)
+    if (discountPercent != null) {
+      total -= total * (discountPercent! / 100);
     }
     return total;
   }
@@ -101,6 +125,6 @@ class Order {
 
   @override
   String toString() {
-    return 'Order{id: $id, customer: $customer, status: $status, total: $total, payment method: $paymentMethod, items: ${items.length}}';
+    return 'Order{id: $id, customer: $customer, status: $status, total: $total, payment method: $paymentMethod, discount desc: $discountDesc, discount amount: $discountPercent, items: ${items.length}}';
   }
 }

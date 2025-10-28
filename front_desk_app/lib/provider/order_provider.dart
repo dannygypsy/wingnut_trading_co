@@ -553,4 +553,15 @@ class OrderProvider extends ChangeNotifier {
 
     // Related items and customizations will be deleted automatically due to foreign key constraints
   }
+
+  applyDiscount(String? discountDesc, double? discountPercent) {
+    if (_currentOrder == null) return;
+
+    _currentOrder = _currentOrder!.copyWith(
+      discountDesc: discountDesc,
+      discountPercent: discountPercent,
+    );
+
+    notifyListeners();
+  }
 }

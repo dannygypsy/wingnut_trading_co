@@ -51,6 +51,7 @@ class OrderReviewPage extends StatelessWidget {
                           onNotesTapped: () {},
                           onGuestTapped: () {},
                           onPaymentTapped: () {},
+                          onDiscountTapped: () {},
                         ),
                       ),
                       const SizedBox(height:20),

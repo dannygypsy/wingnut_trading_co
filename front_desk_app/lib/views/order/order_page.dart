@@ -83,7 +83,7 @@ class OrderPageState extends State<OrderPage> {
                               return Column(
                                   children: [
                                     Expanded(
-                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments, selectedItem: _customizingItem, onItemTapped: _orderItemTapped, onPaymentTapped: _payment,),
+                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments, selectedItem: _customizingItem, onItemTapped: _orderItemTapped, onPaymentTapped: _payment, onDiscountTapped: _discount,),
                                     ),
                                     const SizedBox(height: 10),
                                     OverflowBar(
@@ -137,24 +137,6 @@ class OrderPageState extends State<OrderPage> {
                                             minWidth: 50,  // Add this
                                             height: 50,    // Add this
                                             padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.dollarSign),
-                                            onPressed: () {
-                                              _payment();
-                                            },
-                                          ),
-                                        ),
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.blueGrey,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
                                             child: Icon(FontAwesomeIcons.noteSticky),
                                             onPressed: () {
                                               _comments();
@@ -173,8 +155,76 @@ class OrderPageState extends State<OrderPage> {
                                             minWidth: 50,  // Add this
                                             height: 50,    // Add this
                                             padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.print),
+                                            child: Icon(FontAwesomeIcons.tags),
+                                            onPressed: () {
+                                              //_discount();
+                                            },
+                                          ),
+                                        ),
+                                        Material( //Wrap with Material
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                  10.0)),
+                                          elevation: 18.0,
+                                          color: Colors.blueGrey,
+                                          clipBehavior: Clip.antiAlias,
+                                          // Add This
+                                          child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
+                                            child: Icon(FontAwesomeIcons.percent),
+                                            onPressed: () {
+                                              _discount();
+                                            },
+                                          ),
+                                        ),
+                                        Material( //Wrap with Material
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                  10.0)),
+                                          elevation: 18.0,
+                                          color: Colors.blueGrey,
+                                          clipBehavior: Clip.antiAlias,
+                                          // Add This
+                                          child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.zero,
+                                            child: Icon(FontAwesomeIcons.dollarSign),
+                                            onPressed: () {
+                                              _payment();
+                                            },
+                                          ),
+                                        ),
+
+
+                                      ],
+                                    ),
+                                    SizedBox(height: 10),
+                                    OverflowBar(
+                                      spacing: 10,
+                                      children: <Widget>[
+                                        Material( //Wrap with Material
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(
+                                                  10.0)),
+                                          elevation: 18.0,
+                                          color: Colors.blueGrey,
+                                          clipBehavior: Clip.antiAlias,
+                                          // Add This
+                                          child: MaterialButton(
+                                            minWidth: 50,  // Add this
+                                            height: 50,    // Add this
+                                            padding: EdgeInsets.symmetric(horizontal: 10),
                                             onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _printOrder : null,
+                                            child: Row(
+                                              children: const [
+                                                Icon(FontAwesomeIcons.print),
+                                                SizedBox(width: 5),
+                                                Text("Print"),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                         Material( //Wrap with Material
@@ -188,12 +238,18 @@ class OrderPageState extends State<OrderPage> {
                                           child: MaterialButton(
                                             minWidth: 50,  // Add this
                                             height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.save),
+                                            padding: EdgeInsets.symmetric(horizontal: 10),
                                             onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _saveOrder : null,
+                                            child: Row(
+                                              children: const [
+                                                Icon(FontAwesomeIcons.solidFloppyDisk),
+                                                SizedBox(width: 5),
+                                                Text("Save"),
+                                              ],
+                                            ),
                                           ),
                                         )
-                                      ],
+                                      ]
                                     )
                                   ]
                               );
@@ -354,6 +410,111 @@ class OrderPageState extends State<OrderPage> {
                   )
           );
         }
+    );
+  }
+
+
+  void _discount() {
+    final TextEditingController reasonController = TextEditingController();
+    final TextEditingController percentController = TextEditingController();
+    final OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
+
+    // Pre-fill if discount already exists
+    if (op.currentOrder?.discountDesc != null) {
+      reasonController.text = op.currentOrder!.discountDesc!;
+    }
+    if (op.currentOrder?.discountPercent != null && op.currentOrder!.discountPercent! > 0) {
+      percentController.text = op.currentOrder!.discountPercent!.toStringAsFixed(0);
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Apply Discount'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  //hintText: "Character Name",
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    hintText: "e.g., Staff discount, Promotional offer",
+                    label: Text("Reason"),
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    //prefixIcon: icon,
+                    counterText: '',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0))
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: percentController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  //hintText: "Character Name",
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    label: Text("Percentage"),
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    //prefixIcon: icon,
+                    counterText: '',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0))
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Clear Discount'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: () {
+                final provider = context.read<OrderProvider>();
+                provider.applyDiscount('', 0);
+                Navigator.pop(context);
+                //ScaffoldMessenger.of(context).showSnackBar(
+                //  const SnackBar(content: Text('Discount removed')),
+                //);
+              },
+            ),
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              child: const Text('Apply'),
+              onPressed: () {
+                final reason = reasonController.text.trim();
+                final percent = double.tryParse(percentController.text);
+
+                if (reason.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a reason for the discount')),
+                  );
+                  return;
+                }
+
+                if (percent == null || percent < 0 || percent > 100) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid percentage (0-100)')),
+                  );
+                  return;
+                }
+
+                final provider = context.read<OrderProvider>();
+                provider.applyDiscount(reason, percent);
+                Navigator.pop(context);
+                //ScaffoldMessenger.of(context).showSnackBar(
+                //  SnackBar(content: Text('Applied $percent% discount')),
+                //);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
