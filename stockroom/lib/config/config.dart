@@ -6,6 +6,4 @@ class Config {
 
   static final navigatorKey = GlobalKey<NavigatorState>();
 
-  static const String databaseHost = "stockroom_app.db";
-
 }

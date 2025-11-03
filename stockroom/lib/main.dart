@@ -1,12 +1,16 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:stockroom/provider/inventory_provider.dart';
+import 'package:stockroom/provider/navigation_provider.dart';
 import 'config/config.dart';
 import 'views/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: ".env");
 
   runApp(MyApp());
 }
@@ -51,7 +55,8 @@ class MyApp extends StatelessWidget {
 
     return MultiProvider(
         providers: [
-          ChangeNotifierProvider<InventoryProvider>(create: (_) => InventoryProvider()),
+          ChangeNotifierProvider(create: (_) => NavigationProvider()),
+          ChangeNotifierProvider(create: (_) => InventoryProvider()),
         ],
         child: MaterialApp(
           home: HomeScreen(),

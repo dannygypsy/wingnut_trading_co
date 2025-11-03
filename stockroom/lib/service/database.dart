@@ -1,18 +1,9 @@
-import 'package:mysql1/mysql1.dart';
-import 'package:stockroom/config/config.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:dart_mysql/dart_mysql.dart';
 
 class Database {
   static Database? _instance;
-  MySqlConnection? _connection;
-
-  // Connection settings
-  final ConnectionSettings _settings = ConnectionSettings(
-    host: Config.databaseHost,
-    port: 3306,
-    user: 'your_username',
-    password: 'your_password',
-    db: 'your_database',
-  );
+  MySQLConnection? _connection;
 
   // Singleton pattern
   Database._();
@@ -23,60 +14,83 @@ class Database {
   }
 
   // Get or create connection
-  Future<MySqlConnection> get connection async {
-    if (_connection == null || _connection!.isClosed) {
-      _connection = await MySqlConnection.connect(_settings);
+  Future<MySQLConnection> get connection async {
+    try {
+      if (_connection == null) {
+        print('Connecting to: ${dotenv.env['DB_HOST']}:${dotenv.env['DB_PORT']}');
+
+        _connection = await MySQLConnection.createConnection(
+          host: dotenv.env['DB_HOST']!,
+          port: int.parse(dotenv.env['DB_PORT']!),
+          userName: dotenv.env['DB_USER']!,
+          password: dotenv.env['DB_PASSWORD']!,
+          databaseName: dotenv.env['DB_NAME']!,
+        );
+
+        await _connection!.connect();
+        print('Connected successfully!');
+      }
+      return _connection!;
+    } catch (e, stackTrace) {
+      print('Connection error: $e');
+      print('Stack trace: $stackTrace');
+      _connection = null;
+      rethrow;
     }
-    return _connection!;
   }
 
   // Query multiple rows
   Future<List<Map<String, dynamic>>> query(
       String sql, [
-        List<Object?>? values,
+        Map<String, dynamic>? params,
       ]) async {
     final conn = await connection;
-    final results = await conn.query(sql, values);
+    final result = await conn.execute(sql, params);
 
-    return results.map((row) => row.fields).toList();
+    List<Map<String, dynamic>> rows = [];
+    for (final row in result.rows) {
+      rows.add(row.assoc());
+    }
+
+    return rows;
   }
 
   // Query single row
   Future<Map<String, dynamic>?> querySingle(
       String sql, [
-        List<Object?>? values,
+        Map<String, dynamic>? params,
       ]) async {
-    final results = await query(sql, values);
+    final results = await query(sql, params);
     return results.isEmpty ? null : results.first;
   }
 
   // Insert and return inserted ID
-  Future<int> insert(String sql, [List<Object?>? values]) async {
+  Future<int> insert(String sql, [Map<String, dynamic>? params]) async {
     final conn = await connection;
-    final result = await conn.query(sql, values);
-    return result.insertId ?? 0;
+    final result = await conn.execute(sql, params);
+    return result.lastInsertID;
   }
 
   // Update/Delete and return affected rows
-  Future<int> execute(String sql, [List<Object?>? values]) async {
+  Future<int> execute(String sql, [Map<String, dynamic>? params]) async {
     final conn = await connection;
-    final result = await conn.query(sql, values);
-    return result.affectedRows ?? 0;
+    final result = await conn.execute(sql, params);
+    return result.affectedRows;
   }
 
   // Transaction support
   Future<T> transaction<T>(
-      Future<T> Function(MySqlConnection conn) action,
+      Future<T> Function(MySQLConnection conn) action,
       ) async {
     final conn = await connection;
-    await conn.query('START TRANSACTION');
+    await conn.execute('START TRANSACTION');
 
     try {
       final result = await action(conn);
-      await conn.query('COMMIT');
+      await conn.execute('COMMIT');
       return result;
     } catch (e) {
-      await conn.query('ROLLBACK');
+      await conn.execute('ROLLBACK');
       rethrow;
     }
   }
