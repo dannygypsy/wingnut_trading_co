@@ -56,7 +56,7 @@ class PrinterService extends ChangeNotifier {
       list.add(LineText(
         type: LineText.TYPE_TEXT,
         content: line.text,
-        weight: line.bold ? 2 : 1,
+        weight: line.bold ? 1 : 2,
         align: line.centered ? LineText.ALIGN_CENTER : LineText.ALIGN_LEFT,
         linefeed: 1,
       ));

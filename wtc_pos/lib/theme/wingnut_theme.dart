@@ -7,7 +7,7 @@ class WingnutTheme {
   static const Color violetLight = Color(0xFFEDE9FE);
   static const Color violetMid = Color(0xFFA78BFA);
 
-  static const Color background = Color(0xFFF9FAFB);
+  static const Color background = Color(0xFFE0E0E0);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF111827);
   static const Color textSecondary = Color(0xFF6B7280);

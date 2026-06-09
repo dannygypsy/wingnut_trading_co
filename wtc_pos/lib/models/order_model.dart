@@ -146,8 +146,38 @@ class Order {
   double discountPct = 0.0;
   String paymentMethod = 'not paid';
   final String salespersonName;
+  String? id;
 
   Order({required this.salespersonName});
+
+  /// Reconstruct an Order from the API detail response for reprinting
+  factory Order.fromDetailJson(Map<String, dynamic> json) {
+    final o = Order(salespersonName: json['salesperson_name'] ?? '');
+    o.id = json['id'] as String?;
+    o.customerName = json['customer'];
+    o.discountPct = (json['discount_percent'] as num? ?? 0).toDouble();
+    o.paymentMethod = json['payment_method'] ?? 'not paid';
+
+    for (final item in (json['items'] as List? ?? [])) {
+      final placements = (item['placements'] as List? ?? []).map((p) {
+        final dp = DecalPlacement(slot: p['slot'] ?? '');
+        dp.transferProductId = p['transfer_id'];
+        dp.transferName = p['transfer_name'];
+        dp.transferRetail = (p['transfer_retail'] as num? ?? 0).toDouble();
+        return dp;
+      }).toList();
+
+      o.items.add(OrderItem(
+        blankProductId: item['inventory_id'] ?? '',
+        blankName: item['name'] ?? '',
+        size: item['size'] ?? '',
+        placements: placements,
+        price: (item['retail'] as num? ?? 0).toDouble(),
+        quantity: (item['quantity'] as num? ?? 1).toInt(),
+      ));
+    }
+    return o;
+  }
 
   double get subtotal => items.fold(0, (sum, i) => sum + i.lineTotal);
   double get discountAmount => subtotal * (discountPct / 100);

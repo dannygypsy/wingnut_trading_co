@@ -221,6 +221,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
     try {
       final orderId = await widget.api.submitOrder(widget.order);
       if (!mounted) return;
+      widget.order.id = orderId;
       _showSuccess(orderId);
     } catch (e) {
       if (!mounted) return;

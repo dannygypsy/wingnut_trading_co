@@ -56,10 +56,31 @@ class ApiService {
     }
   }
 
-  /// Fetch order list
-  Future<List<Map<String, dynamic>>> getOrders() async {
+  /// Update order status
+  Future<void> updateOrderStatus(String orderId, String status) async {
     try {
-      final response = await _dio.get('/api/wtc/pos/orders');
+      await _dio.patch('/api/wtc/pos/orders/$orderId/status',
+          data: {'status': status});
+    } on DioException catch (e) {
+      throw _friendlyError(e);
+    }
+  }
+
+  /// Get order detail
+  Future<Map<String, dynamic>> getOrderDetail(String orderId) async {
+    try {
+      final response = await _dio.get('/api/wtc/pos/orders/$orderId');
+      return response.data['order'] as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _friendlyError(e);
+    }
+  }
+  Future<List<Map<String, dynamic>>> getOrders({String? date, String? search}) async {
+    try {
+      final response = await _dio.get('/api/wtc/pos/orders', queryParameters: {
+        if (date != null) 'date': date,
+        if (search != null && search.isNotEmpty) 'search': search,
+      });
       return List<Map<String, dynamic>>.from(
           response.data['orders'] as List? ?? []);
     } on DioException catch (e) {

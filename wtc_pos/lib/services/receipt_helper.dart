@@ -38,7 +38,12 @@ class ReceiptHelper {
     lines.add(const ReceiptLine(text: 'THE WINGNUT TRADING CO.', bold: true, centered: true));
     lines.add(const ReceiptLine(text: 'Cameron, North Carolina', centered: true));
     lines.add(const ReceiptLine(text: ' '));
-    lines.add(ReceiptLine(text: 'GUEST: ${(order.customerName ?? '???').toUpperCase()}', centered: true));
+    if (order.id != null) {
+      lines.add(ReceiptLine(
+          text: 'ORDER: ${order.id!.toUpperCase()}',
+          centered: true));
+    }
+    lines.add(ReceiptLine(text: 'GUEST: ${(order.customerName ?? '???').toUpperCase()}', centered: true, bold: true));
     lines.add(const ReceiptLine(text: ' '));
     lines.add(const ReceiptLine(divider: true));
     lines.add(const ReceiptLine(text: ' '));
@@ -100,7 +105,7 @@ class ReceiptHelper {
     lines.add(ReceiptLine(text: formattedDate, centered: true));
     lines.add(const ReceiptLine(text: ' '));
     lines.add(const ReceiptLine(text: 'THANK YOU FOR SUPPORTING', bold: true, centered: true));
-    lines.add(const ReceiptLine(text: 'WINGNUT TRADING CO!', bold: true, centered: true));
+    lines.add(const ReceiptLine(text: 'WINGNUT STABLES!', bold: true, centered: true));
 
     return lines;
   }

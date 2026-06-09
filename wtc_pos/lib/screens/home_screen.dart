@@ -7,6 +7,7 @@ import '../services/printer_service.dart';
 import '../theme/wingnut_theme.dart';
 import '../widgets/pin_dialog.dart';
 import 'add_item_screen.dart';
+import 'orders_list_screen.dart';
 import 'printer_screen.dart';
 import 'settings_screen.dart';
 
@@ -114,8 +115,12 @@ class HomeScreen extends StatelessWidget {
                 description: 'Browse and review past orders',
                 color: WingnutTheme.violetDark,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon: View Orders')),
+                  final settings = context.read<AppSettings>();
+                  final api = ApiService(settings.baseUrl);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => OrdersListScreen(api: api),
+                    ),
                   );
                 },
               ),
