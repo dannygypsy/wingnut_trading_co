@@ -1,28 +1,44 @@
+/// Convert short size code to full label
+String sizeLabel(String? size) {
+  const map = {
+    'XS': 'X-Small',
+    'S': 'Small',
+    'M': 'Medium',
+    'L': 'Large',
+    'XL': 'X-Large',
+    '2XL': '2X-Large',
+    '3XL': '3X-Large',
+    '4XL': '4X-Large',
+  };
+  return map[size] ?? size ?? '';
+}
+
 class DecalPlacement {
   final String slot;
-  String? decalId;
-  String? decalName;
+  String? transferProductId;
+  String? transferName;
+  double transferRetail;
 
-  DecalPlacement({required this.slot, this.decalId, this.decalName});
+  DecalPlacement({required this.slot, this.transferProductId, this.transferName, this.transferRetail = 0.0});
 
-  bool get hasDecal => decalId != null;
+  bool get hasDecal => transferProductId != null;
 
   Map<String, dynamic> toJson() => {
-    'placement': slot,
-    'decal_id': decalId,
-    'decal_name': decalName,
+    'slot': slot,
+    'transfer_id': transferProductId,
+    'transfer_name': transferName,
   };
 }
 
 class OrderItem {
-  final String blankId;
+  final String blankProductId;
   final String blankName;
   final String size;
   final List<DecalPlacement> placements;
   double price;
 
   OrderItem({
-    required this.blankId,
+    required this.blankProductId,
     required this.blankName,
     required this.size,
     required this.placements,
@@ -32,69 +48,61 @@ class OrderItem {
   bool get hasPlacementSlots => placements.isNotEmpty;
 
   Map<String, dynamic> toJson() => {
-    'blank_id': blankId,
+    'blank_id': blankProductId,
     'blank_name': blankName,
     'size': size,
     'placements': placements.map((p) => p.toJson()).toList(),
     'price': price,
   };
+}
 
-  String sizeToDisplay() {
-    switch (size.toUpperCase()) {
-      case 'XS': return 'X-Small';
-      case 'S': return 'Small';
-      case 'M': return 'Medium';
-      case 'L': return 'Large';
-      case 'XL': return 'X-Large';
-      case '2XL': return '2X-Large';
-      case '3XL': return '3X-Large';
-      case '4XL': return '4X-Large';
-      default: return size;
-    }
+/// Parsed result from a QR code scan — just the product ID
+class QrScanResult {
+  final String productId;
+
+  QrScanResult({required this.productId});
+
+  /// Parse QR payload — just a WTC-XXXXXXXX code
+  factory QrScanResult.fromQrString(String raw) {
+    return QrScanResult(productId: raw.trim());
   }
 }
 
-/// Parsed result from a QR code scan
-class QrScanResult {
-  final String id;
+/// Full product detail returned by the server after lookup
+class ProductDetail {
+  final String productId;
   final String name;
   final String? size;
   final String? category;
   final List<String> placementSlots;
   final bool isTransfer;
+  final bool inStock;
+  final double retail;
 
-  QrScanResult({
-    required this.id,
+  ProductDetail({
+    required this.productId,
     required this.name,
     this.size,
     this.category,
     this.placementSlots = const [],
     this.isTransfer = false,
+    this.inStock = true,
+    this.retail = 0.0,
   });
 
-  /// Parse QR payload: ID:WTC-xxx|C:category|N:name|S:size|P:Front,Back
-  /// Transfer format:  ID:WTC-xxx|N:name|T:transfer
-  factory QrScanResult.fromQrString(String raw) {
-    final parts = <String, String>{};
-    for (final segment in raw.split('|')) {
-      final idx = segment.indexOf(':');
-      if (idx == -1) continue;
-      final key = segment.substring(0, idx).trim().toUpperCase();
-      final value = segment.substring(idx + 1).trim();
-      parts[key] = value;
-    }
-
-    final placements = (parts['P'] ?? '').isNotEmpty
-        ? parts['P']!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList()
-        : <String>[];
-
-    return QrScanResult(
-      id: parts['ID'] ?? '',
-      name: parts['N'] ?? 'Unknown Item',
-      size: parts['S'],
-      category: parts['C'],
+  factory ProductDetail.fromJson(Map<String, dynamic> json) {
+    final placements = (json['placements'] as List? ?? [])
+        .map((p) => p.toString())
+        .toList();
+    return ProductDetail(
+      productId: json['product_id'] ?? '',
+      name: json['name'] ?? 'Unknown',
+      size: json['size'],
+      category: json['category'],
       placementSlots: placements,
-      isTransfer: parts['C']?.toLowerCase() == 'transfers',
+      isTransfer: json['is_transfer'] == true,
+      inStock: json['in_stock'] != false,
+      retail: (json['retail'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

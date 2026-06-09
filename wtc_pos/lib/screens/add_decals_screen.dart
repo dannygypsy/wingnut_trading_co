@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/order_model.dart';
@@ -54,21 +53,48 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
     if (_scanningSlotIndex == null || _decrementing) return;
     final raw = capture.barcodes.firstOrNull?.rawValue;
     if (raw == null || raw.isEmpty) return;
-    if (!raw.contains('WTC-') || !raw.contains('N:')) return;
-
-    final result = QrScanResult.fromQrString(raw);
-
-    if (!result.isTransfer) {
-      setState(() => _scanError =
-      'That\'s not a transfer. Please scan a transfer label.');
-      return;
-    }
+    if (!raw.toUpperCase().startsWith('WTC-')) return;
 
     setState(() => _decrementing = true);
     _scanner.stop();
 
     try {
-      await widget.api.decrementDecal(result.id);
+      // Look up the product
+      final detail = await widget.api.lookupProduct(raw.trim());
+
+      if (!detail.isTransfer) {
+        setState(() {
+          _scanError = 'That\'s not a transfer. Please scan a transfer label.';
+          _decrementing = false;
+        });
+        _scanner.start();
+        return;
+      }
+
+      if (!detail.inStock) {
+        if (!mounted) return;
+        setState(() {
+          _scanError = 'No stock remaining for "${detail.name}".';
+          _decrementing = false;
+        });
+        _scanner.start();
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Assign transfer to slot and add its retail to item price
+      final slot = widget.item.placements[_scanningSlotIndex!];
+      slot.transferProductId = detail.productId;
+      slot.transferName = detail.name;
+      slot.transferRetail = detail.retail;
+      widget.item.price += detail.retail;
+
+      setState(() {
+        _scanningSlotIndex = null;
+        _decrementing = false;
+        _scanError = null;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -76,27 +102,16 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
         _decrementing = false;
       });
       _scanner.start();
-      return;
     }
-
-    if (!mounted) return;
-
-    // Assign decal to slot
-    final slot = widget.item.placements[_scanningSlotIndex!];
-    slot.decalId = result.id;
-    slot.decalName = result.name;
-
-    setState(() {
-      _scanningSlotIndex = null;
-      _decrementing = false;
-      _scanError = null;
-    });
   }
 
   void _clearSlot(int index) {
     setState(() {
-      widget.item.placements[index].decalId = null;
-      widget.item.placements[index].decalName = null;
+      final slot = widget.item.placements[index];
+      widget.item.price -= slot.transferRetail;
+      slot.transferProductId = null;
+      slot.transferName = null;
+      slot.transferRetail = 0.0;
     });
   }
 
@@ -160,7 +175,7 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
               ),
               if (widget.item.size.isNotEmpty)
                 Text(
-                  widget.item.sizeToDisplay(),
+                  sizeLabel(widget.item.size),
                   style: const TextStyle(
                       fontSize: 13, color: WingnutTheme.textSecondary),
                 ),
@@ -339,7 +354,7 @@ class _SlotTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  filled ? CupertinoIcons.check_mark : CupertinoIcons.qrcode,
+                  filled ? Icons.check : Icons.qr_code_scanner,
                   color: filled ? Colors.white : WingnutTheme.textSecondary,
                   size: 20,
                 ),
@@ -359,16 +374,16 @@ class _SlotTile extends StatelessWidget {
                             : WingnutTheme.textPrimary,
                       ),
                     ),
-                    if (filled && placement.decalName != null)
+                    if (filled && placement.transferName != null)
                       Text(
-                        placement.decalName!,
+                        placement.transferName!,
                         style: const TextStyle(
                             fontSize: 13,
                             color: WingnutTheme.textSecondary),
                       )
                     else
                       const Text(
-                        'Tap to scan decal',
+                        'Tap to scan transfer',
                         style: TextStyle(
                             fontSize: 13,
                             color: WingnutTheme.textSecondary),

@@ -2,7 +2,7 @@ import 'package:front_desk_app/model/values.dart' show Values;
 
 class InventoryItem {
   final String id;
-  //final String type;
+  final String type;
   final String name;
   final String fullName;
   final String category;
@@ -14,7 +14,7 @@ class InventoryItem {
 
   InventoryItem({
     required this.id,
-    //required this.type,
+    required this.type,
     required this.name,
     required this.fullName,
     required this.category,
@@ -45,7 +45,7 @@ class InventoryItem {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      //'type': type,
+      'type': type,
       'name': name,
       'full_name': fullName,
       'category': category,

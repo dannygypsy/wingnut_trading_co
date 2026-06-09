@@ -59,6 +59,16 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
     _syncFields();
     if (widget.order.items.isEmpty) return;
 
+    // Customer name required if any item has a transfer
+    final hasTransfer = widget.order.items.any(
+          (item) => item.placements.any((p) => p.hasDecal),
+    );
+    if (hasTransfer && (widget.order.customerName ?? '').isEmpty) {
+      setState(() => _submitError =
+      'Customer name is required for orders with transfers — they need to come back to pick it up.');
+      return;
+    }
+
     setState(() {
       _submitting = true;
       _submitError = null;
@@ -129,6 +139,33 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
       appBar: AppBar(
         title: const Text('Order'),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Cancel Order?'),
+                content: const Text('This order will be discarded.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Keep'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context)
+                        ..pop()
+                        ..pop();
+                    },
+                    child: const Text('Cancel Order',
+                        style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
@@ -137,138 +174,151 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // ── Items ──────────────────────────────────
-                ...order.items.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final item = entry.value;
-                  return _ItemCard(
-                    item: item,
-                    index: i,
-                    onPriceChanged: (v) {
-                      setState(() => item.price = v);
-                    },
-                    onRemove: () => setState(() => order.items.removeAt(i)),
-                  );
-                }),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // ── Items ──────────────────────────────────
+                  ...order.items.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final item = entry.value;
+                    return _ItemCard(
+                      item: item,
+                      index: i,
+                      onPriceChanged: (v) {
+                        setState(() => item.price = v);
+                      },
+                      onRemove: () => setState(() => order.items.removeAt(i)),
+                    );
+                  }),
 
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-                // ── Add another ────────────────────────────
-                OutlinedButton.icon(
-                  onPressed: _addAnotherItem,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Another Item'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
+                  // ── Add another ────────────────────────────
+                  OutlinedButton.icon(
+                    onPressed: _addAnotherItem,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Another Item'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
 
-                // ── Customer name ──────────────────────────
-                TextField(
-                  controller: _nameController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Customer Name (optional)',
-                    prefixIcon: Icon(Icons.person_outline,
-                        color: WingnutTheme.violet),
+                  // ── Customer name ──────────────────────────
+                  Builder(builder: (context) {
+                    final hasTransfer = order.items.any(
+                          (item) => item.placements.any((p) => p.hasDecal),
+                    );
+                    return TextField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        labelText: hasTransfer
+                            ? 'Customer Name *'
+                            : 'Customer Name (optional)',
+                        prefixIcon: const Icon(Icons.person_outline,
+                            color: WingnutTheme.violet),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    );
+                  }),
+
+                  const SizedBox(height: 12),
+
+                  // ── Discount ───────────────────────────────
+                  TextField(
+                    controller: _discountController,
+                    keyboardType: TextInputType.text,
+                    textInputAction: TextInputAction.done,
+                    onEditingComplete: () => FocusScope.of(context).unfocus(),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'Discount %',
+                      prefixIcon: Icon(Icons.local_offer_outlined,
+                          color: WingnutTheme.violet),
+                      suffixText: '%',
+                    ),
+                    onChanged: (_) => setState(() {}),
                   ),
-                  onChanged: (_) => setState(() {}),
-                ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 12),
 
-                // ── Discount ───────────────────────────────
-                TextField(
-                  controller: _discountController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'Discount %',
-                    prefixIcon: Icon(Icons.local_offer_outlined,
-                        color: WingnutTheme.violet),
-                    suffixText: '%',
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 12),
-
-                // ── Totals ─────────────────────────────────
-                _TotalRow(label: 'Subtotal', amount: subtotal),
-                if (discount > 0) ...[
+                  // ── Totals ─────────────────────────────────
+                  _TotalRow(label: 'Subtotal', amount: subtotal),
+                  if (discount > 0) ...[
+                    const SizedBox(height: 6),
+                    _TotalRow(
+                      label: 'Discount ($discount%)',
+                      amount: -discountAmt,
+                      color: Colors.green,
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   _TotalRow(
-                    label: 'Discount ($discount%)',
-                    amount: -discountAmt,
-                    color: Colors.green,
+                    label: 'Total',
+                    amount: total,
+                    bold: true,
+                    large: true,
                   ),
-                ],
-                const SizedBox(height: 6),
-                _TotalRow(
-                  label: 'Total',
-                  amount: total,
-                  bold: true,
-                  large: true,
-                ),
 
-                if (_submitError != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: WingnutTheme.danger.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: WingnutTheme.danger.withOpacity(0.3)),
+                  if (_submitError != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: WingnutTheme.danger.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: WingnutTheme.danger.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        _submitError!,
+                        style: const TextStyle(
+                            color: WingnutTheme.danger, fontSize: 13),
+                      ),
                     ),
-                    child: Text(
-                      _submitError!,
-                      style: const TextStyle(
-                          color: WingnutTheme.danger, fontSize: 13),
-                    ),
-                  ),
+                  ],
+
+                  const SizedBox(height: 100), // space for button
                 ],
-
-                const SizedBox(height: 100), // space for button
-              ],
-            ),
-          ),
-
-          // ── Submit bar ────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-            decoration: const BoxDecoration(
-              color: WingnutTheme.surface,
-              border: Border(top: BorderSide(color: WingnutTheme.border)),
-            ),
-            child: ElevatedButton(
-              onPressed:
-              (order.items.isEmpty || _submitting) ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 2.5),
-              )
-                  : Text(
-                'Submit Order — \$${total.toStringAsFixed(2)}',
               ),
             ),
-          ),
-        ],
+
+            // ── Submit bar ────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+              decoration: const BoxDecoration(
+                color: WingnutTheme.surface,
+                border: Border(top: BorderSide(color: WingnutTheme.border)),
+              ),
+              child: ElevatedButton(
+                onPressed:
+                (order.items.isEmpty || _submitting) ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2.5),
+                )
+                    : Text(
+                  'Submit Order — \$${total.toStringAsFixed(2)}',
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -276,7 +326,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
 
 // ── Item card ────────────────────────────────────────────────────────────────
 
-class _ItemCard extends StatelessWidget {
+class _ItemCard extends StatefulWidget {
   final OrderItem item;
   final int index;
   final ValueChanged<double> onPriceChanged;
@@ -288,6 +338,27 @@ class _ItemCard extends StatelessWidget {
     required this.onPriceChanged,
     required this.onRemove,
   });
+
+  @override
+  State<_ItemCard> createState() => _ItemCardState();
+}
+
+class _ItemCardState extends State<_ItemCard> {
+  late TextEditingController _priceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _priceController = TextEditingController(
+      text: widget.item.price > 0 ? widget.item.price.toStringAsFixed(2) : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -310,15 +381,15 @@ class _ItemCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.blankName,
+                        widget.item.blankName,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: WingnutTheme.textPrimary,
                         ),
                       ),
-                      if (item.size.isNotEmpty)
-                        Text(item.size,
+                      if (widget.item.size.isNotEmpty)
+                        Text(sizeLabel(widget.item.size),
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: WingnutTheme.textSecondary)),
@@ -327,10 +398,12 @@ class _ItemCard extends StatelessWidget {
                 ),
                 // Price field
                 SizedBox(
-                  width: 90,
+                  width: 130,
                   child: TextField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    controller: _priceController,
+                    keyboardType: TextInputType.text,
+                    textInputAction: TextInputAction.done,
+                    onEditingComplete: () => FocusScope.of(context).unfocus(),
                     decoration: const InputDecoration(
                       prefixText: '\$',
                       hintText: '0.00',
@@ -338,35 +411,21 @@ class _ItemCard extends StatelessWidget {
                           horizontal: 10, vertical: 8),
                       isDense: true,
                     ),
-                    controller: TextEditingController(
-                      text: item.price > 0
-                          ? item.price.toStringAsFixed(2)
-                          : '',
-                    ),
                     onChanged: (v) =>
-                        onPriceChanged(double.tryParse(v) ?? 0),
+                        widget.onPriceChanged(double.tryParse(v) ?? 0),
                     style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: WingnutTheme.textSecondary, size: 20),
-                  onPressed: onRemove,
-                  tooltip: 'Remove item',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
               ],
             ),
 
-            // Decal placements
-            if (item.placements.isNotEmpty) ...[
+            // Transfer placements
+            if (widget.item.placements.isNotEmpty) ...[
               const SizedBox(height: 8),
               const Divider(height: 1),
               const SizedBox(height: 8),
-              ...item.placements.map((p) => Padding(
+              ...widget.item.placements.map((p) => Padding(
                 padding: const EdgeInsets.only(bottom: 3),
                 child: Row(
                   children: [
@@ -390,7 +449,7 @@ class _ItemCard extends StatelessWidget {
                               fontSize: 12,
                               color: WingnutTheme.textSecondary)),
                       Text(
-                        p.decalName ?? p.decalId ?? '',
+                        p.transferName ?? p.transferProductId ?? '',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -402,6 +461,27 @@ class _ItemCard extends StatelessWidget {
                 ),
               )),
             ],
+
+            // Delete button at bottom right
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: widget.onRemove,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.delete_outline,
+                        color: WingnutTheme.textSecondary, size: 16),
+                    SizedBox(width: 4),
+                    Text('Remove',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: WingnutTheme.textSecondary)),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

@@ -3,7 +3,7 @@ import '../models/order_model.dart';
 import '../theme/wingnut_theme.dart';
 
 class SearchResultsScreen extends StatelessWidget {
-  final List<InventorySearchResult> results;
+  final List<ProductDetail> results;
 
   const SearchResultsScreen({super.key, required this.results});
 
@@ -60,7 +60,7 @@ class SearchResultsScreen extends StatelessWidget {
                                 const SizedBox(width: 6),
                               ],
                               Text(
-                                item.id,
+                                item.productId,
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: WingnutTheme.textSecondary,

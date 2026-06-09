@@ -16,35 +16,40 @@ class ApiService {
     _dio.options.baseUrl = baseUrl;
   }
 
-  /// Search inventory by WTC code or description
-  Future<List<InventorySearchResult>> searchInventory(String query) async {
+  /// Look up full product detail by product ID (includes in_stock)
+  Future<ProductDetail> lookupProduct(String productId) async {
     try {
       final response = await _dio.get(
-        '/api/inventory/search',
+        '/api/wtc/pos/inventory/lookup',
+        queryParameters: {'pid': productId},
+      );
+      return ProductDetail.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _friendlyError(e);
+    }
+  }
+
+  /// Search inventory by WTC code or description (manual lookup)
+  Future<List<ProductDetail>> searchInventory(String query) async {
+    try {
+      final response = await _dio.get(
+        '/api/wtc/pos/inventory/search',
         queryParameters: {'q': query},
       );
-      final List data = response.data as List;
+      final List data = (response.data['results'] as List? ?? []);
       return data
-          .map((j) => InventorySearchResult.fromJson(j as Map<String, dynamic>))
+          .map((j) => ProductDetail.fromJson(j as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw _friendlyError(e);
     }
   }
 
-  /// Decrement decal stock when scanned onto a placement
-  Future<void> decrementDecal(String decalId) async {
-    try {
-      await _dio.patch('/api/inventory/$decalId/decrement');
-    } on DioException catch (e) {
-      throw _friendlyError(e);
-    }
-  }
-
-  /// Submit a completed order
+  /// Submit a completed order (server resolves product_ids to batch UUIDs)
   Future<String> submitOrder(Order order) async {
     try {
-      final response = await _dio.post('/api/orders', data: order.toJson());
+      final response =
+      await _dio.post('/api/wtc/pos/orders', data: order.toJson());
       return (response.data['id'] ?? '').toString();
     } on DioException catch (e) {
       throw _friendlyError(e);
@@ -54,8 +59,9 @@ class ApiService {
   /// Fetch order list
   Future<List<Map<String, dynamic>>> getOrders() async {
     try {
-      final response = await _dio.get('/api/orders');
-      return List<Map<String, dynamic>>.from(response.data as List);
+      final response = await _dio.get('/api/wtc/pos/orders');
+      return List<Map<String, dynamic>>.from(
+          response.data['orders'] as List? ?? []);
     } on DioException catch (e) {
       throw _friendlyError(e);
     }
@@ -69,6 +75,6 @@ class ApiService {
     if (e.type == DioExceptionType.connectionError) {
       return 'Cannot reach server. Check the backend URL in Settings.';
     }
-    return e.response?.data?['error'] ?? 'An unexpected error occurred.';
+    return e.response?.data?['message'] ?? e.response?.data?['error'] ?? 'An unexpected error occurred.';
   }
 }
