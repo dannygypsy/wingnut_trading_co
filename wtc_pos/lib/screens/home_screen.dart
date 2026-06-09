@@ -2,8 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_settings.dart';
+import '../models/order_model.dart';
+import '../services/api_service.dart';
 import '../theme/wingnut_theme.dart';
 import '../widgets/pin_dialog.dart';
+import 'add_item_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -113,9 +116,15 @@ class HomeScreen extends StatelessWidget {
                 description: 'Scan items and build a new order',
                 color: WingnutTheme.violet,
                 onTap: () {
-                  // TODO: navigate to new order screen
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon: New Order')),
+                  final settings = context.read<AppSettings>();
+                  final order = Order(
+                    salespersonName: settings.salespersonName ?? '',
+                  );
+                  final api = ApiService(settings.baseUrl);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AddItemScreen(order: order, api: api),
+                    ),
                   );
                 },
               ),

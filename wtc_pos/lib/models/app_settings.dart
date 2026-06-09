@@ -6,7 +6,7 @@ class AppSettings extends ChangeNotifier {
   static const String _keyBaseUrl = 'base_url';
 
   // Hardcoded PIN — change before deploying
-  static const String adminPin = '1234';
+  static const String adminPin = '1080';
 
   String? _salespersonName;
   String _baseUrl = 'http://localhost:3001';
