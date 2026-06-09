@@ -4,6 +4,8 @@ import '../models/order_model.dart';
 import '../theme/wingnut_theme.dart';
 import '../services/api_service.dart';
 import 'add_item_screen.dart';
+import 'add_decals_screen.dart';
+import 'receipt_preview_screen.dart';
 
 class OrderReceiptScreen extends StatefulWidget {
   final Order order;
@@ -51,6 +53,148 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
       MaterialPageRoute(
         builder: (_) =>
             AddItemScreen(order: widget.order, api: widget.api),
+      ),
+    );
+  }
+
+  void _showItemActions(OrderItem item, int index) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(item.blankName,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700)),
+                  ),
+                  if (item.size.isNotEmpty)
+                    Text(sizeLabel(item.size),
+                        style: const TextStyle(
+                            color: WingnutTheme.textSecondary, fontSize: 13)),
+                ],
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.attach_money, color: WingnutTheme.violet),
+              title: const Text('Change Price'),
+              onTap: () {
+                Navigator.pop(context);
+                _showPriceDialog(item);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.exposure, color: WingnutTheme.violet),
+              title: const Text('Change Quantity'),
+              onTap: () {
+                Navigator.pop(context);
+                _showQuantityDialog(item);
+              },
+            ),
+            if (item.hasPlacementSlots)
+              ListTile(
+                leading: const Icon(Icons.edit, color: WingnutTheme.violet),
+                title: const Text('Edit Transfers'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AddDecalsScreen(
+                        order: widget.order,
+                        item: item,
+                        api: widget.api,
+                        editMode: true,
+                      ),
+                    ),
+                  ).then((_) => setState(() {}));
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Remove Item',
+                  style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => widget.order.items.removeAt(index));
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPriceDialog(OrderItem item) {
+    final controller =
+    TextEditingController(text: item.price.toStringAsFixed(2));
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Change Price'),
+        content: TextField(
+          controller: controller,
+          keyboardType:
+          const TextInputType.numberWithOptions(decimal: true),
+          autofocus: true,
+          decoration: const InputDecoration(prefixText: '\$'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              final v = double.tryParse(controller.text);
+              if (v != null && v >= 0) {
+                setState(() => item.price = v);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuantityDialog(OrderItem item) {
+    final controller =
+    TextEditingController(text: item.quantity.toString());
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Change Quantity'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Quantity'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              final v = int.tryParse(controller.text);
+              if (v != null && v > 0) {
+                setState(() => item.quantity = v);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
       ),
     );
   }
@@ -190,9 +334,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                     return _ItemCard(
                       item: item,
                       index: i,
-                      onPriceChanged: (v) {
-                        setState(() => item.price = v);
-                      },
+                      onTap: () => _showItemActions(item, i),
                       onRemove: () => setState(() => order.items.removeAt(i)),
                     );
                   }),
@@ -290,31 +432,67 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 100), // space for button
+                  const SizedBox(height: 100), // space for buttons
                 ],
               ),
             ),
 
-            // ── Submit bar ────────────────────────────────────
+            // ── Bottom bar ────────────────────────────────────
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
               decoration: const BoxDecoration(
                 color: WingnutTheme.surface,
                 border: Border(top: BorderSide(color: WingnutTheme.border)),
               ),
-              child: ElevatedButton(
-                onPressed:
-                (order.items.isEmpty || _submitting) ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                  height: 22,
-                  width: 22,
-                  child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2.5),
-                )
-                    : Text(
-                  'Submit Order — \$${total.toStringAsFixed(2)}',
-                ),
+              child: Row(
+                children: [
+                  // Save — 70%
+                  Expanded(
+                    flex: 7,
+                    child: ElevatedButton(
+                      onPressed:
+                      (order.items.isEmpty || _submitting) ? null : _submit,
+                      child: _submitting
+                          ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2.5),
+                      )
+                          : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_outline, size: 20),
+                          SizedBox(width: 8),
+                          Text('Submit Order'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Print — 30%
+                  Expanded(
+                    flex: 3,
+                    child: ElevatedButton(
+                      onPressed: order.items.isEmpty
+                          ? null
+                          : () {
+                        _syncFields();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ReceiptPreviewScreen(order: widget.order),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange[700],
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Icon(Icons.print_outlined, size: 24),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -326,163 +504,126 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
 
 // ── Item card ────────────────────────────────────────────────────────────────
 
-class _ItemCard extends StatefulWidget {
+class _ItemCard extends StatelessWidget {
   final OrderItem item;
   final int index;
-  final ValueChanged<double> onPriceChanged;
+  final VoidCallback onTap;
   final VoidCallback onRemove;
 
   const _ItemCard({
     required this.item,
     required this.index,
-    required this.onPriceChanged,
+    required this.onTap,
     required this.onRemove,
   });
 
   @override
-  State<_ItemCard> createState() => _ItemCardState();
-}
-
-class _ItemCardState extends State<_ItemCard> {
-  late TextEditingController _priceController;
-
-  @override
-  void initState() {
-    super.initState();
-    _priceController = TextEditingController(
-      text: widget.item.price > 0 ? widget.item.price.toStringAsFixed(2) : '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _priceController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: WingnutTheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: WingnutTheme.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: WingnutTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: WingnutTheme.border),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.blankName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: WingnutTheme.textPrimary,
+                          ),
+                        ),
+                        if (item.size.isNotEmpty)
+                          Text(sizeLabel(item.size),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: WingnutTheme.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  // Price / qty display
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        widget.item.blankName,
+                        '\$${item.lineTotal.toStringAsFixed(2)}',
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: WingnutTheme.textPrimary,
-                        ),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: WingnutTheme.textPrimary),
                       ),
-                      if (widget.item.size.isNotEmpty)
-                        Text(sizeLabel(widget.item.size),
-                            style: const TextStyle(
+                      if (item.quantity > 1)
+                        Text(
+                          '${item.quantity} × \$${item.price.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: WingnutTheme.textSecondary),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right,
+                      color: WingnutTheme.textSecondary, size: 18),
+                ],
+              ),
+
+              // Transfer placements
+              if (item.placements.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                ...item.placements.map((p) => Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Row(
+                    children: [
+                      Icon(
+                        p.hasDecal ? Icons.circle : Icons.circle_outlined,
+                        size: 8,
+                        color: p.hasDecal
+                            ? WingnutTheme.violet
+                            : WingnutTheme.border,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        p.slot,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: WingnutTheme.textSecondary),
+                      ),
+                      if (p.hasDecal) ...[
+                        const Text(' → ',
+                            style: TextStyle(
                                 fontSize: 12,
                                 color: WingnutTheme.textSecondary)),
-                    ],
-                  ),
-                ),
-                // Price field
-                SizedBox(
-                  width: 130,
-                  child: TextField(
-                    controller: _priceController,
-                    keyboardType: TextInputType.text,
-                    textInputAction: TextInputAction.done,
-                    onEditingComplete: () => FocusScope.of(context).unfocus(),
-                    decoration: const InputDecoration(
-                      prefixText: '\$',
-                      hintText: '0.00',
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      isDense: true,
-                    ),
-                    onChanged: (v) =>
-                        widget.onPriceChanged(double.tryParse(v) ?? 0),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                ),
-              ],
-            ),
-
-            // Transfer placements
-            if (widget.item.placements.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-              ...widget.item.placements.map((p) => Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: Row(
-                  children: [
-                    Icon(
-                      p.hasDecal ? Icons.circle : Icons.circle_outlined,
-                      size: 8,
-                      color: p.hasDecal
-                          ? WingnutTheme.violet
-                          : WingnutTheme.border,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      p.slot,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: WingnutTheme.textSecondary),
-                    ),
-                    if (p.hasDecal) ...[
-                      const Text(' → ',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: WingnutTheme.textSecondary)),
-                      Text(
-                        p.transferName ?? p.transferProductId ?? '',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: WingnutTheme.violetDark,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              )),
-            ],
-
-            // Delete button at bottom right
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: widget.onRemove,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.delete_outline,
-                        color: WingnutTheme.textSecondary, size: 16),
-                    SizedBox(width: 4),
-                    Text('Remove',
-                        style: TextStyle(
+                        Text(
+                          p.transferName ?? p.transferProductId ?? '',
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: WingnutTheme.textSecondary)),
-                  ],
-                ),
-              ),
-            ),
-          ],
+                            fontWeight: FontWeight.w600,
+                            color: WingnutTheme.violetDark,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                )),
+              ],
+            ],
+          ),
         ),
       ),
     );

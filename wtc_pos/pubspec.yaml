@@ -35,6 +35,8 @@ dependencies:
   go_router: ^13.2.0
   dio: ^5.4.1
   mobile_scanner: ^5.2.3
+  bluetooth_print: ^4.3.0
+  intl: ^0.18.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

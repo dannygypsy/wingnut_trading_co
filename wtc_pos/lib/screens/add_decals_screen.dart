@@ -9,12 +9,14 @@ class AddDecalsScreen extends StatefulWidget {
   final Order order;
   final OrderItem item;
   final ApiService api;
+  final bool editMode;
 
   const AddDecalsScreen({
     super.key,
     required this.order,
     required this.item,
     required this.api,
+    this.editMode = false,
   });
 
   @override
@@ -116,13 +118,18 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
   }
 
   void _done() {
-    widget.order.items.add(widget.item);
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) =>
-            OrderReceiptScreen(order: widget.order, api: widget.api),
-      ),
-    );
+    if (widget.editMode) {
+      // Just go back to the receipt screen
+      Navigator.of(context).pop();
+    } else {
+      widget.order.items.add(widget.item);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              OrderReceiptScreen(order: widget.order, api: widget.api),
+        ),
+      );
+    }
   }
 
   @override

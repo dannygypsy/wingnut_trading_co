@@ -36,6 +36,7 @@ class OrderItem {
   final String size;
   final List<DecalPlacement> placements;
   double price;
+  int quantity;
 
   OrderItem({
     required this.blankProductId,
@@ -43,14 +44,17 @@ class OrderItem {
     required this.size,
     required this.placements,
     this.price = 0.0,
+    this.quantity = 1,
   });
 
   bool get hasPlacementSlots => placements.isNotEmpty;
+  double get lineTotal => price * quantity;
 
   Map<String, dynamic> toJson() => {
     'blank_id': blankProductId,
     'blank_name': blankName,
     'size': size,
+    'quantity': quantity,
     'placements': placements.map((p) => p.toJson()).toList(),
     'price': price,
   };
@@ -144,7 +148,7 @@ class Order {
 
   Order({required this.salespersonName});
 
-  double get subtotal => items.fold(0, (sum, i) => sum + i.price);
+  double get subtotal => items.fold(0, (sum, i) => sum + i.lineTotal);
   double get discountAmount => subtotal * (discountPct / 100);
   double get total => subtotal - discountAmount;
 
