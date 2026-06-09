@@ -144,6 +144,7 @@ class Order {
   final List<OrderItem> items = [];
   String? customerName;
   double discountPct = 0.0;
+  String paymentMethod = 'not paid';
   final String salespersonName;
 
   Order({required this.salespersonName});
@@ -156,6 +157,7 @@ class Order {
     'salesperson_name': salespersonName,
     'customer_name': customerName,
     'discount_pct': discountPct,
+    'payment_method': paymentMethod,
     'items': items.map((i) => i.toJson()).toList(),
     'total': total,
   };

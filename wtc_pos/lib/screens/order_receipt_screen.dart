@@ -392,6 +392,14 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                     onChanged: (_) => setState(() {}),
                   ),
 
+                  const SizedBox(height: 12),
+
+                  // ── Payment method ─────────────────────────
+                  _PaymentSelector(
+                    current: order.paymentMethod,
+                    onChanged: (v) => setState(() => order.paymentMethod = v),
+                  ),
+
                   const SizedBox(height: 24),
                   const Divider(),
                   const SizedBox(height: 12),
@@ -624,6 +632,110 @@ class _ItemCard extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Payment selector ─────────────────────────────────────────────────────────
+
+class _PaymentSelector extends StatelessWidget {
+  final String current;
+  final ValueChanged<String> onChanged;
+
+  static const _options = [
+    ('not paid', 'Not Paid', Colors.red),
+    ('cash', 'Cash', Colors.green),
+    ('venmo', 'Venmo', Colors.blue),
+    ('cashapp', 'CashApp', Colors.green),
+    ('zelle', 'Zelle', Colors.purple),
+    ('comped', 'Comped', Colors.orange),
+    ('other', 'Other', Colors.grey),
+  ];
+
+  const _PaymentSelector({required this.current, required this.onChanged});
+
+  Color _colorFor(String method) {
+    for (final o in _options) {
+      if (o.$1 == method) return o.$3;
+    }
+    return Colors.grey;
+  }
+
+  void _showDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Payment Method'),
+        children: _options.map((o) {
+          final selected = o.$1 == current;
+          return SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(context);
+              onChanged(o.$1);
+            },
+            child: Row(
+              children: [
+                Icon(
+                  selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                  color: o.$3,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(o.$2,
+                    style: TextStyle(
+                        color: o.$3, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorFor(current);
+    final label = _options
+        .firstWhere((o) => o.$1 == current, orElse: () => _options.first)
+        .$2;
+
+    return GestureDetector(
+      onTap: () => _showDialog(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: WingnutTheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: WingnutTheme.border),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.payment_outlined, color: WingnutTheme.violet, size: 20),
+            const SizedBox(width: 12),
+            Text('Payment',
+                style: const TextStyle(
+                    fontSize: 12, color: WingnutTheme.textSecondary)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: color),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right,
+                color: WingnutTheme.textSecondary, size: 18),
+          ],
         ),
       ),
     );

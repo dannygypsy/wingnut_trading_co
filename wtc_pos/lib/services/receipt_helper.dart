@@ -87,7 +87,7 @@ class ReceiptHelper {
       bold: true,
     ));
     lines.add(ReceiptLine(
-      text: formatLine('PAYMENT:', 'NOT PAID'),
+      text: formatLine('PAYMENT:', order.paymentMethod.toUpperCase()),
       bold: true,
     ));
 
