@@ -59,16 +59,29 @@ class SearchResultsScreen extends StatelessWidget {
                                 _Chip(item.size!),
                                 const SizedBox(width: 6),
                               ],
-                              Text(
-                                item.productId,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: WingnutTheme.textSecondary,
-                                  fontFamily: 'Courier',
+                              Flexible(
+                                child:
+                                Text(
+                                  item.productId,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: WingnutTheme.textSecondary,
+                                    fontFamily: 'Courier',
+                                  ),
                                 ),
-                              ),
+                              )
                             ],
                           ),
+                          // Price
+                          if (item.retail != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Price: \$${item.retail!.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: WingnutTheme.textSecondary),
+                            ),
+                          ],
                           if (item.placementSlots.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
