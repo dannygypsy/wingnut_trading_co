@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'models/app_settings.dart';
 import 'screens/home_screen.dart';
 import 'screens/setup_screen.dart';
+import 'services/printer_service.dart';
 import 'theme/wingnut_theme.dart';
 
 void main() async {
@@ -12,8 +13,11 @@ void main() async {
   await settings.load();
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: settings,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: settings),
+        ChangeNotifierProvider(create: (_) => PrinterService()),
+      ],
       child: const WingnutSalesApp(),
     ),
   );

@@ -1,12 +1,13 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_settings.dart';
 import '../models/order_model.dart';
 import '../services/api_service.dart';
+import '../services/printer_service.dart';
 import '../theme/wingnut_theme.dart';
 import '../widgets/pin_dialog.dart';
 import 'add_item_screen.dart';
+import 'printer_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -30,12 +31,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<AppSettings>();
-    final name = settings.salespersonName ?? '';
 
     return Scaffold(
       backgroundColor: WingnutTheme.background,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,17 +53,15 @@ class HomeScreen extends StatelessWidget {
                         const Text(
                           'WINGNUT',
                           style: TextStyle(
-                            fontFamily: 'Vova',
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: WingnutTheme.violet,
-                            letterSpacing: 2.5,
+                            letterSpacing: 2,
                           ),
                         ),
                         Text(
                           'Trading Company',
                           style: TextStyle(
-                            fontFamily: 'Vova',
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: WingnutTheme.violet.withOpacity(0.6),
@@ -84,34 +82,12 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 8),
               const Divider(color: WingnutTheme.border),
-              const SizedBox(height: 28),
-
-              // Greeting
-              Text(
-                'Hi, $name',
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: WingnutTheme.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                "What would you like to do?",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: WingnutTheme.textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
 
               // New Order button
               _MenuCard(
-                icon: CupertinoIcons.qrcode,
+                icon: Icons.qr_code_scanner_rounded,
                 label: 'New Order',
                 description: 'Scan items and build a new order',
                 color: WingnutTheme.violet,
@@ -133,26 +109,48 @@ class HomeScreen extends StatelessWidget {
 
               // View Orders button
               _MenuCard(
-                icon: CupertinoIcons.doc_text_search,
+                icon: Icons.receipt_long_outlined,
                 label: 'View Orders',
                 description: 'Browse and review past orders',
                 color: WingnutTheme.violetDark,
                 onTap: () {
-                  // TODO: navigate to orders list
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Coming soon: View Orders')),
                   );
                 },
               ),
 
-              const Spacer(),
+              const SizedBox(height: 16),
+
+              // Printer
+              Consumer<PrinterService>(
+                builder: (context, printerService, _) {
+                  final connected = printerService.connected;
+                  return _MenuCard(
+                    icon: connected
+                        ? Icons.bluetooth_connected
+                        : Icons.print_outlined,
+                    label: 'Printer',
+                    description: connected
+                        ? 'Connected: ${printerService.printer?.name ?? ''}'
+                        : 'No printer connected',
+                    color: connected ? Colors.green[700]! : Colors.blueGrey[600]!,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const PrinterScreen()),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 24),
 
               // Footer
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Center(
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
-                    'WTC Sales v1.0',
+                    'Wingnut Sales v1.0',
                     style: TextStyle(
                       fontSize: 12,
                       color: WingnutTheme.textSecondary.withOpacity(0.5),

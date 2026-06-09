@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/order_model.dart';
+import '../services/printer_service.dart';
 import '../services/receipt_helper.dart';
 import '../theme/wingnut_theme.dart';
 
@@ -68,11 +70,21 @@ class ReceiptPreviewScreen extends StatelessWidget {
                 Expanded(
                   flex: 7,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: wire up bluetooth printing
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Printing coming soon')),
-                      );
+                    onPressed: () async {
+                      final printerService = context.read<PrinterService>();
+                      final connected = await printerService.isConnected();
+                      if (!connected) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'No printer connected. Go to Printer on the main menu.'),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      await printerService.printOrder(order);
                     },
                     icon: const Icon(Icons.print_outlined, size: 20),
                     label: const Text('Print Receipt'),

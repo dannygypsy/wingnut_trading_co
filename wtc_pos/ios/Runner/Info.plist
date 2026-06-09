@@ -68,5 +68,15 @@
 	</array>
     <key>NSCameraUsageDescription</key>
     <string>Wingnut Sales uses the camera to scan product QR codes when building orders.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Wingnut Sales uses Bluetooth to connect to the receipt printer.</string>
+
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>Wingnut Sales uses Bluetooth to connect to the receipt printer.</string>
+
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>bluetooth-central</string>
+    </array>
 </dict>
 </plist>
