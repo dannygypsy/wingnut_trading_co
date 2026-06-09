@@ -28,6 +28,10 @@ class InventoryCategoryCard extends StatelessWidget {
 
 
     for (var i in ip.getItemsByTypeAndCategory(type)) {
+      // Only show an item card if it has more than 0 in stock, or if it's already selected (so you can deselect it)
+      if ((i.remaining??0) <= 0) {
+        continue;
+      }
       itemCards.add(InventoryItemCard(item: i, onSelect: onItemSelected));
     }
 

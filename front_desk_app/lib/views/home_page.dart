@@ -1,5 +1,3 @@
-
-
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -22,7 +20,14 @@ import 'package:provider/provider.dart';
 import 'order/order_list_page.dart';
 import 'printer/printer_page.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
 
   final TextStyle _titleStyle = const TextStyle(fontSize: 24, color: Colors.black, fontWeight: FontWeight.bold);
   final TextStyle _smallStyle = const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold);
@@ -38,7 +43,6 @@ class HomeScreen extends StatelessWidget {
           backgroundColor: const Color(0x00000000),
           title: Builder(
               builder: (BuildContext context) {
-                //print("App is ${_controller.app.value.name}");
                 return const Text("");
               }
           ),
@@ -46,20 +50,19 @@ class HomeScreen extends StatelessWidget {
           actions: [
             // Lock/unlock button
             IconButton(
-              icon: Values.locked? Icon(FontAwesomeIcons.unlock, color: Colors.black,) : Icon(FontAwesomeIcons.lock, color: Colors.black,),
+              icon: Values.locked ? Icon(FontAwesomeIcons.unlock, color: Colors.black) : Icon(FontAwesomeIcons.lock, color: Colors.black),
               onPressed: () async {
                 if (Values.locked) {
-                  // Show PIN dialog to unlock
                   final result = await showPinDialog(context);
-                  if (result == true) {
-                    Values.locked = false;
-                    // Successfully unlocked, rebuild UI
-                    (context as Element).markNeedsBuild();
+                  if (result == true && mounted) {
+                    setState(() {
+                      Values.locked = false;
+                    });
                   }
                 } else {
-                  // Lock it
-                  Values.locked = true;
-                  (context as Element).markNeedsBuild();
+                  setState(() {
+                    Values.locked = true;
+                  });
                 }
               },
             )
@@ -183,116 +186,116 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height:50),
                     if (!Values.locked)
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox.fromSize(
-                            size: const Size(125, 125),
-                            child: ClipOval(
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(125),
-                                    border: Border.all(
-                                      color: Colors.red.withAlpha(100),
-                                      width: 5,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox.fromSize(
+                              size: const Size(125, 125),
+                              child: ClipOval(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(125),
+                                      border: Border.all(
+                                        color: Colors.red.withAlpha(100),
+                                        width: 5,
+                                      ),
                                     ),
-                                  ),
-                                  child: InkWell(
-                                    splashColor: Colors.green.withOpacity(0.5),
-                                    onTap: () {
-                                      //debugPrint("Printer selected");
-                                      _downloadInventory(context);
-                                    },
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(FontAwesomeIcons.download, size: 50, color: Colors.black),
-                                        Text("Inv", style: _smallStyle),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width:50),
-                          SizedBox.fromSize(
-                            size: const Size(125, 125),
-                            child: ClipOval(
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(125),
-                                    border: Border.all(
-                                      color: Colors.red.withAlpha(100),
-                                      width: 5,
-                                    ),
-                                  ),
-                                  child: InkWell(
-                                    splashColor: Colors.green.withOpacity(0.5),
-                                    onTap: () {
-                                      //debugPrint("Printer selected");
-                                      _uploadOrders(context);
-                                    },
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(FontAwesomeIcons.upload, size: 50, color: Colors.black),
-                                        Text("Orders", style: _smallStyle),
-                                      ],
+                                    child: InkWell(
+                                      splashColor: Colors.green.withOpacity(0.5),
+                                      onTap: () {
+                                        //debugPrint("Printer selected");
+                                        _downloadInventory(context);
+                                      },
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(FontAwesomeIcons.download, size: 50, color: Colors.black),
+                                          Text("Inv", style: _smallStyle),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width:50),
-                          SizedBox.fromSize(
-                            size: const Size(125, 125),
-                            child: ClipOval(
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(125),
-                                    border: Border.all(
-                                      color: Colors.red.withAlpha(100),
-                                      width: 5,
+                            const SizedBox(width:50),
+                            SizedBox.fromSize(
+                              size: const Size(125, 125),
+                              child: ClipOval(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(125),
+                                      border: Border.all(
+                                        color: Colors.red.withAlpha(100),
+                                        width: 5,
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      splashColor: Colors.green.withOpacity(0.5),
+                                      onTap: () {
+                                        //debugPrint("Printer selected");
+                                        _uploadOrders(context);
+                                      },
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(FontAwesomeIcons.upload, size: 50, color: Colors.black),
+                                          Text("Orders", style: _smallStyle),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  child: InkWell(
-                                    splashColor: Colors.green.withOpacity(0.5),
-                                    onTap: () async {
-                                      //debugPrint("Printer selected");
-                                      final choice = await confirmDialog(
-                                          c: context,
-                                          message: "Are you sure you want to clear ALL orders? You MUST upload them first or you will lose them. This action cannot be undone."
-                                      );
-                                      if (choice == true) {
-                                        final choice2 = await confirmDialog(
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width:50),
+                            SizedBox.fromSize(
+                              size: const Size(125, 125),
+                              child: ClipOval(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(125),
+                                      border: Border.all(
+                                        color: Colors.red.withAlpha(100),
+                                        width: 5,
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      splashColor: Colors.green.withOpacity(0.5),
+                                      onTap: () async {
+                                        //debugPrint("Printer selected");
+                                        final choice = await confirmDialog(
                                             c: context,
-                                            message: "This is your LAST chance. Are you REALLY sure you want to clear ALL orders? This action cannot be undone."
+                                            message: "Are you sure you want to clear ALL orders? You MUST upload them first or you will lose them. This action cannot be undone."
                                         );
-                                        if (choice2 == true) {
-                                          await _clearAllOrders();
+                                        if (choice == true) {
+                                          final choice2 = await confirmDialog(
+                                              c: context,
+                                              message: "This is your LAST chance. Are you REALLY sure you want to clear ALL orders? This action cannot be undone."
+                                          );
+                                          if (choice2 == true) {
+                                            await _clearAllOrders();
+                                          }
                                         }
-                                      }
-                                    },
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(FontAwesomeIcons.trashCan, size: 50, color: Colors.black),
-                                        Text("Orders", style: _smallStyle),
-                                      ],
+                                      },
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(FontAwesomeIcons.trashCan, size: 50, color: Colors.black),
+                                          Text("Orders", style: _smallStyle),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ]
+                          ]
                       ),
 
                   ],

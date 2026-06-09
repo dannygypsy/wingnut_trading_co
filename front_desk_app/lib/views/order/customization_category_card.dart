@@ -31,6 +31,9 @@ class CustomizationCategoryCard extends StatelessWidget {
     }));
 
     for (var i in ip.getItemsByType(type)) {
+      if ((i.remaining??0) <= 0) {
+        continue;
+      }
       itemCards.add(InventoryItemCard(item: i, onSelect: (i) {
         onItemSelected(i, position);
       }));

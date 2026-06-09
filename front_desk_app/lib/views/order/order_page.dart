@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -27,22 +26,29 @@ class OrderPageState extends State<OrderPage> {
   final TextStyle _titleStyle = const TextStyle(fontSize: 36, color: Colors.white);
   final TextEditingController _textController = TextEditingController();
   OrderItem ? _customizingItem;
-  bool _hasUnsavedChanges = false;  // Add this
+  bool _hasUnsavedChanges = false;
+  bool _isHandlingPop = false;
+  late OrderProvider _orderProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Safe place to grab inherited/provided references — called before build
+    // and before dispose, so the context is still valid here.
+    _orderProvider = Provider.of<OrderProvider>(context, listen: false);
+  }
 
   @override
   void initState() {
     super.initState();
-    // Listen to OrderProvider changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final op = Provider.of<OrderProvider>(context, listen: false);
-      op.addListener(_onOrderChanged);
+      _orderProvider.addListener(_onOrderChanged);
     });
   }
 
   @override
   void dispose() {
-    //final op = Provider.of<OrderProvider>(context, listen: false);
-    //op.removeListener(_onOrderChanged);
+    _orderProvider.removeListener(_onOrderChanged);
     super.dispose();
   }
 
@@ -95,40 +101,56 @@ class OrderPageState extends State<OrderPage> {
 
   @override
   Widget build(BuildContext context) {
-    OrderProvider op = Provider.of<OrderProvider>(context, listen: true);
+    OrderProvider op = Provider.of<OrderProvider>(context, listen: false);
 
-    return PopScope(  // Wrap Scaffold with PopScope (or WillPopScope for older Flutter)
-      canPop: !_hasUnsavedChanges,
-      onPopInvoked: (bool didPop) async {
-        if (didPop) return;
+    return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic result) async {
+          if (didPop || _isHandlingPop) return;
 
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop();
-        }
-      },
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: const Color(0x00000000),
-          centerTitle: true,
-          elevation: 0,
-          title: Text("Order ${op.currentOrder!.id}", style: _titleStyle,),
-        ),
-        body: SizedBox.expand(
-            child: Container(
-                decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage("assets/wallpaper.webp"),
-                      fit: BoxFit.cover,
-                    )
-                ),
-                child: Row(
-                    children:[
-                      Expanded(
-                        child: _customizingItem == null
-                            ? InventoryMenu(onSelect: _onSelectedItem)
-                            : CustomizationMenu(
+          // If we're in the customization sub-view, back goes there first
+          if (_customizingItem != null) {
+            setState(() {
+              _customizingItem = null;
+            });
+            return;
+          }
+
+          if (!_hasUnsavedChanges) {
+            if (context.mounted) Navigator.of(context).pop();
+            return;
+          }
+
+          _isHandlingPop = true;
+          final shouldPop = await _onWillPop();
+          _isHandlingPop = false;
+
+          if (shouldPop && context.mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Scaffold(
+            extendBodyBehindAppBar: true,
+            appBar: AppBar(
+              backgroundColor: const Color(0x00000000),
+              centerTitle: true,
+              elevation: 0,
+              title: Text("Order ${op.currentOrder!.id}", style: _titleStyle,),
+            ),
+            body: SizedBox.expand(
+                child: Container(
+                    decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage("assets/wallpaper.webp"),
+                          fit: BoxFit.cover,
+                        )
+                    ),
+                    child: Row(
+                        children:[
+                          Expanded(
+                              child: _customizingItem == null
+                                  ? InventoryMenu(onSelect: _onSelectedItem)
+                                  : CustomizationMenu(
                                 onSelect: (item, position) {
                                   if (item == null) {
                                     _removeCustomization(position);
@@ -144,192 +166,192 @@ class OrderPageState extends State<OrderPage> {
                                   });
                                 },
                               )
-                      ),
-                      SizedBox(width:10),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 90, right:10, bottom:10),
-                        child: Consumer<OrderProvider>(
-                            builder: (context, order, child) {
-                              return Column(
-                                  children: [
-                                    Expanded(
-                                      child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments, selectedItem: _customizingItem, onItemTapped: _orderItemTapped, onPaymentTapped: _payment, onDiscountTapped: _discount,),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    OverflowBar(
-                                      spacing: 10,
-                                      children: <Widget>[
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.deepOrange,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
-                                            child: const Icon(FontAwesomeIcons.arrowRotateLeft),
-                                            onPressed: () {
-                                              _resetOrder();
-                                            },
-                                          ),
+                          ),
+                          SizedBox(width:10),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 90, right:10, bottom:10),
+                            child: Consumer<OrderProvider>(
+                                builder: (context, order, child) {
+                                  return Column(
+                                      children: [
+                                        Expanded(
+                                          child: OrderReceiptCard(onGuestTapped: _customer, onNotesTapped: _comments, selectedItem: _customizingItem, onItemTapped: _orderItemTapped, onPaymentTapped: _payment, onDiscountTapped: _discount,),
                                         ),
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.blueGrey,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.person),
-                                            onPressed: () {
-                                              _customer();
-                                            },
-                                          ),
-                                        ),
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.blueGrey,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.noteSticky),
-                                            onPressed: () {
-                                              _comments();
-                                            },
-                                          ),
-                                        ),
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.blueGrey,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.tags),
-                                            onPressed: () {
-                                              _custom();
-                                            },
-                                          ),
-                                        ),
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.blueGrey,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.percent),
-                                            onPressed: () {
-                                              _discount();
-                                            },
-                                          ),
-                                        ),
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.blueGrey,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.zero,
-                                            child: Icon(FontAwesomeIcons.dollarSign),
-                                            onPressed: () {
-                                              _payment();
-                                            },
-                                          ),
-                                        ),
+                                        const SizedBox(height: 10),
+                                        OverflowBar(
+                                          spacing: 10,
+                                          children: <Widget>[
+                                            Material( //Wrap with Material
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      10.0)),
+                                              elevation: 18.0,
+                                              color: Colors.deepOrange,
+                                              clipBehavior: Clip.antiAlias,
+                                              // Add This
+                                              child: MaterialButton(
+                                                minWidth: 50,  // Add this
+                                                height: 50,    // Add this
+                                                padding: EdgeInsets.zero,
+                                                child: const Icon(FontAwesomeIcons.arrowRotateLeft),
+                                                onPressed: () {
+                                                  _resetOrder();
+                                                },
+                                              ),
+                                            ),
+                                            Material( //Wrap with Material
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      10.0)),
+                                              elevation: 18.0,
+                                              color: Colors.blueGrey,
+                                              clipBehavior: Clip.antiAlias,
+                                              // Add This
+                                              child: MaterialButton(
+                                                minWidth: 50,  // Add this
+                                                height: 50,    // Add this
+                                                padding: EdgeInsets.zero,
+                                                child: Icon(FontAwesomeIcons.person),
+                                                onPressed: () {
+                                                  _customer();
+                                                },
+                                              ),
+                                            ),
+                                            Material( //Wrap with Material
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      10.0)),
+                                              elevation: 18.0,
+                                              color: Colors.blueGrey,
+                                              clipBehavior: Clip.antiAlias,
+                                              // Add This
+                                              child: MaterialButton(
+                                                minWidth: 50,  // Add this
+                                                height: 50,    // Add this
+                                                padding: EdgeInsets.zero,
+                                                child: Icon(FontAwesomeIcons.noteSticky),
+                                                onPressed: () {
+                                                  _comments();
+                                                },
+                                              ),
+                                            ),
+                                            Material( //Wrap with Material
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      10.0)),
+                                              elevation: 18.0,
+                                              color: Colors.blueGrey,
+                                              clipBehavior: Clip.antiAlias,
+                                              // Add This
+                                              child: MaterialButton(
+                                                minWidth: 50,  // Add this
+                                                height: 50,    // Add this
+                                                padding: EdgeInsets.zero,
+                                                child: Icon(FontAwesomeIcons.tags),
+                                                onPressed: () {
+                                                  _custom();
+                                                },
+                                              ),
+                                            ),
+                                            Material( //Wrap with Material
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      10.0)),
+                                              elevation: 18.0,
+                                              color: Colors.blueGrey,
+                                              clipBehavior: Clip.antiAlias,
+                                              // Add This
+                                              child: MaterialButton(
+                                                minWidth: 50,  // Add this
+                                                height: 50,    // Add this
+                                                padding: EdgeInsets.zero,
+                                                child: Icon(FontAwesomeIcons.percent),
+                                                onPressed: () {
+                                                  _discount();
+                                                },
+                                              ),
+                                            ),
+                                            Material( //Wrap with Material
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(
+                                                      10.0)),
+                                              elevation: 18.0,
+                                              color: Colors.blueGrey,
+                                              clipBehavior: Clip.antiAlias,
+                                              // Add This
+                                              child: MaterialButton(
+                                                minWidth: 50,  // Add this
+                                                height: 50,    // Add this
+                                                padding: EdgeInsets.zero,
+                                                child: Icon(FontAwesomeIcons.dollarSign),
+                                                onPressed: () {
+                                                  _payment();
+                                                },
+                                              ),
+                                            ),
 
 
-                                      ],
-                                    ),
-                                    SizedBox(height: 10),
-                                    OverflowBar(
-                                      spacing: 10,
-                                      children: <Widget>[
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.blueGrey,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.symmetric(horizontal: 10),
-                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _printOrder : null,
-                                            child: Row(
-                                              children: const [
-                                                Icon(FontAwesomeIcons.print),
-                                                SizedBox(width: 5),
-                                                Text("Print"),
-                                              ],
-                                            ),
-                                          ),
+                                          ],
                                         ),
-                                        Material( //Wrap with Material
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(
-                                                  10.0)),
-                                          elevation: 18.0,
-                                          color: Colors.green,
-                                          clipBehavior: Clip.antiAlias,
-                                          // Add This
-                                          child: MaterialButton(
-                                            minWidth: 50,  // Add this
-                                            height: 50,    // Add this
-                                            padding: EdgeInsets.symmetric(horizontal: 10),
-                                            onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _saveOrder : null,
-                                            child: Row(
-                                              children: const [
-                                                Icon(FontAwesomeIcons.solidFloppyDisk),
-                                                SizedBox(width: 5),
-                                                Text("Save"),
-                                              ],
-                                            ),
-                                          ),
+                                        SizedBox(height: 10),
+                                        OverflowBar(
+                                            spacing: 10,
+                                            children: <Widget>[
+                                              Material( //Wrap with Material
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(
+                                                        10.0)),
+                                                elevation: 18.0,
+                                                color: Colors.blueGrey,
+                                                clipBehavior: Clip.antiAlias,
+                                                // Add This
+                                                child: MaterialButton(
+                                                  minWidth: 50,  // Add this
+                                                  height: 50,    // Add this
+                                                  padding: EdgeInsets.symmetric(horizontal: 10),
+                                                  onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _printOrder : null,
+                                                  child: Row(
+                                                    children: const [
+                                                      Icon(FontAwesomeIcons.print),
+                                                      SizedBox(width: 5),
+                                                      Text("Print"),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              Material( //Wrap with Material
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(
+                                                        10.0)),
+                                                elevation: 18.0,
+                                                color: Colors.green,
+                                                clipBehavior: Clip.antiAlias,
+                                                // Add This
+                                                child: MaterialButton(
+                                                  minWidth: 50,  // Add this
+                                                  height: 50,    // Add this
+                                                  padding: EdgeInsets.symmetric(horizontal: 10),
+                                                  onPressed: order.currentItems.isNotEmpty && order.currentOrder!.customer != null && order.currentOrder!.customer!.isNotEmpty && order.currentOrder!.paymentMethod != null ? _saveOrder : null,
+                                                  child: Row(
+                                                    children: const [
+                                                      Icon(FontAwesomeIcons.solidFloppyDisk),
+                                                      SizedBox(width: 5),
+                                                      Text("Save"),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )
+                                            ]
                                         )
                                       ]
-                                    )
-                                  ]
-                              );
-                            }),
-                      )
-                    ]
+                                  );
+                                }),
+                          )
+                        ]
+                    )
                 )
             )
         )
-      )
     );
   }
 
@@ -1097,4 +1119,3 @@ class OrderPageState extends State<OrderPage> {
 
 
 }
-
