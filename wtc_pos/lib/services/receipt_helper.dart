@@ -28,6 +28,25 @@ class ReceiptHelper {
     return left + (' ' * spaces.clamp(0, kPrinterWidth)) + right;
   }
 
+  /// Word-wrap text to fit within max chars, returning multiple lines
+  static List<String> wordWrap(String text, int max) {
+    final words = text.split(' ');
+    final result = <String>[];
+    var current = '';
+    for (final word in words) {
+      if (current.isEmpty) {
+        current = word;
+      } else if (current.length + 1 + word.length <= max) {
+        current += ' $word';
+      } else {
+        result.add(current);
+        current = word;
+      }
+    }
+    if (current.isNotEmpty) result.add(current);
+    return result;
+  }
+
   static String crop(String text, int max) =>
       text.length <= max ? text : text.substring(0, max);
 
@@ -72,6 +91,15 @@ class ReceiptHelper {
     }
 
     lines.add(const ReceiptLine(text: ' '));
+
+    // Notes
+    if (order.notes != null && order.notes!.isNotEmpty) {
+      lines.add(const ReceiptLine(text: 'NOTES:', bold: true));
+      for (final line in wordWrap(order.notes!, kPrinterWidth)) {
+        lines.add(ReceiptLine(text: line));
+      }
+      lines.add(const ReceiptLine(text: ' '));
+    }
 
     // Discount
     if (order.discountPct > 0) {

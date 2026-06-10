@@ -22,6 +22,7 @@ class OrderReceiptScreen extends StatefulWidget {
 class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
   bool _submitting = false;
   String? _submitError;
 
@@ -32,12 +33,14 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
     _discountController.text = widget.order.discountPct > 0
         ? widget.order.discountPct.toStringAsFixed(0)
         : '';
+    _notesController.text = widget.order.notes ?? '';
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _discountController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -47,6 +50,9 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
         : _nameController.text.trim();
     final pct = double.tryParse(_discountController.text.trim()) ?? 0;
     widget.order.discountPct = pct.clamp(0, 100);
+    widget.order.notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
   }
 
   void _addAnotherItem() {
@@ -390,6 +396,25 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                   _PaymentSelector(
                     current: order.paymentMethod,
                     onChanged: (v) => setState(() => order.paymentMethod = v),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ── Notes ──────────────────────────────────
+                  TextField(
+                    controller: _notesController,
+                    maxLength: 512,
+                    maxLines: 3,
+                    minLines: 1,
+                    textInputAction: TextInputAction.newline,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optional)',
+                      hintText: 'Special instructions...',
+                      prefixIcon: Icon(Icons.notes_outlined,
+                          color: WingnutTheme.violet),
+                      counterText: '',
+                      alignLabelWithHint: true,
+                    ),
                   ),
 
                   const SizedBox(height: 24),

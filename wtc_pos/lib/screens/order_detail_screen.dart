@@ -201,6 +201,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final customer = o['customer'] as String? ?? '—';
     final salesperson = o['salesperson_name'] as String? ?? '—';
     final createdAt = o['created_at'] as String? ?? '';
+    final notes = o['notes'] as String?;
     final items = o['items'] as List? ?? [];
 
     final subtotal = items.fold<double>(0, (sum, item) {
@@ -298,6 +299,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          // ── Notes ────────────────────────────────────────
+          if (notes != null && notes.isNotEmpty)
+            _Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Notes',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: WingnutTheme.textSecondary)),
+                  const SizedBox(height: 6),
+                  Text(notes,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          color: WingnutTheme.textPrimary)),
+                ],
+              ),
+            ),
 
           const SizedBox(height: 12),
 

@@ -29,6 +29,7 @@ class DecalPlacement {
     'slot': slot,
     'transfer_id': transferProductId,
     'transfer_name': transferName,
+    'transfer_retail': transferRetail,
   };
 }
 
@@ -149,6 +150,7 @@ class Order {
   String? customerName;
   double discountPct = 0.0;
   String paymentMethod = 'not paid';
+  String? notes;
   final String salespersonName;
   String? id;
 
@@ -159,6 +161,7 @@ class Order {
     final o = Order(salespersonName: json['salesperson_name'] ?? '');
     o.id = json['id'] as String?;
     o.customerName = json['customer'];
+    o.notes = json['notes'] as String?;
     o.discountPct = (json['discount_percent'] as num? ?? 0).toDouble();
     o.paymentMethod = json['payment_method'] ?? 'not paid';
 
@@ -221,6 +224,7 @@ class Order {
     'customer_name': customerName,
     'discount_pct': discountPct,
     'payment_method': paymentMethod,
+    'notes': notes,
     'items': items.map((i) => i.toJson()).toList(),
     'total': total,
   };
