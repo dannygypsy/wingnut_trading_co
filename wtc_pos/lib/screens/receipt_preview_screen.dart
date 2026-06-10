@@ -5,14 +5,59 @@ import '../services/printer_service.dart';
 import '../services/receipt_helper.dart';
 import '../theme/wingnut_theme.dart';
 
-class ReceiptPreviewScreen extends StatelessWidget {
+class ReceiptPreviewScreen extends StatefulWidget {
   final Order order;
+  final bool isConfirmation;
 
-  const ReceiptPreviewScreen({super.key, required this.order});
+  const ReceiptPreviewScreen({
+    super.key,
+    required this.order,
+    this.isConfirmation = false,
+  });
+
+  @override
+  State<ReceiptPreviewScreen> createState() => _ReceiptPreviewScreenState();
+}
+
+class _ReceiptPreviewScreenState extends State<ReceiptPreviewScreen> {
+  bool _printing = false;
+  String? _printError;
+  int _printCount = 0;
+
+  Future<void> _print() async {
+    final printerService = context.read<PrinterService>();
+    final connected = await printerService.isConnected();
+    if (!connected) {
+      setState(() => _printError =
+      'No printer connected. Go to Printer on the main menu.');
+      return;
+    }
+    setState(() {
+      _printing = true;
+      _printError = null;
+    });
+    try {
+      await printerService.printOrder(widget.order);
+      setState(() {
+        _printCount++;
+        _printing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _printError = e.toString();
+        _printing = false;
+      });
+    }
+  }
+
+  void _done() {
+    // Pop all the way back to home
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final lines = ReceiptHelper.buildLines(order);
+    final lines = ReceiptHelper.buildLines(widget.order);
     final fontSize = (MediaQuery.of(context).size.width - 32) / 17;
 
     TextStyle style(bool bold) => TextStyle(
@@ -26,10 +71,12 @@ class ReceiptPreviewScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[300],
       appBar: AppBar(
-        title: const Text('Receipt Preview'),
+        title: Text(widget.isConfirmation ? 'Order Confirmed' : 'Receipt Preview'),
+        automaticallyImplyLeading: !widget.isConfirmation,
       ),
       body: Column(
         children: [
+          // ── Receipt ──────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -44,7 +91,8 @@ class ReceiptPreviewScreen extends StatelessWidget {
                       return const Divider(color: Colors.black);
                     }
                     if (line.centered) {
-                      return Center(child: Text(line.text, style: style(line.bold)));
+                      return Center(
+                          child: Text(line.text, style: style(line.bold)));
                     }
                     return Text(
                       line.text,
@@ -58,51 +106,60 @@ class ReceiptPreviewScreen extends StatelessWidget {
             ),
           ),
 
-          // ── Bottom bar ──────────────────────────────────────
+          // ── Bottom bar ───────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
             decoration: const BoxDecoration(
               color: WingnutTheme.surface,
               border: Border(top: BorderSide(color: WingnutTheme.border)),
             ),
-            child: Row(
+            child: widget.isConfirmation
+                ? Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  flex: 7,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final printerService = context.read<PrinterService>();
-                      final connected = await printerService.isConnected();
-                      if (!connected) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'No printer connected. Go to Printer on the main menu.'),
-                            ),
-                          );
-                        }
-                        return;
-                      }
-                      await printerService.printOrder(order);
-                    },
-                    icon: const Icon(Icons.print_outlined, size: 20),
-                    label: const Text('Print Receipt'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 3,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange[700],
-                      foregroundColor: Colors.white,
+                // Print button
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 7,
+                      child: ElevatedButton.icon(
+                        onPressed: _printing ? null : _print,
+                        icon: _printing
+                            ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.print_outlined, size: 20),
+                        label: Text('Print Receipt'),
+                      ),
                     ),
-                    child: const Icon(Icons.arrow_back, size: 24),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 3,
+                      child: ElevatedButton(
+                        onPressed: _done,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Done'),
+                      ),
+                    ),
+                  ],
                 ),
+                if (_printError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(_printError!,
+                      style: const TextStyle(
+                          fontSize: 12, color: WingnutTheme.danger),
+                      textAlign: TextAlign.center),
+                ],
               ],
+            )
+                : ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Back to Order'),
             ),
           ),
         ],

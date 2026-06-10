@@ -85,12 +85,11 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
 
       if (!mounted) return;
 
-      // Assign transfer to slot and add its retail to item price
+      // Assign transfer to slot — price is calculated via lineTotal
       final slot = widget.item.placements[_scanningSlotIndex!];
       slot.transferProductId = detail.productId;
       slot.transferName = detail.name;
       slot.transferRetail = detail.retail;
-      widget.item.price += detail.retail;
 
       setState(() {
         _scanningSlotIndex = null;
@@ -110,7 +109,6 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
   void _clearSlot(int index) {
     setState(() {
       final slot = widget.item.placements[index];
-      widget.item.price -= slot.transferRetail;
       slot.transferProductId = null;
       slot.transferName = null;
       slot.transferRetail = 0.0;

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Convert short size code to full label
 String sizeLabel(String? size) {
   const map = {
@@ -48,7 +50,9 @@ class OrderItem {
   });
 
   bool get hasPlacementSlots => placements.isNotEmpty;
-  double get lineTotal => price * quantity;
+  double get transferTotal => placements.fold(0, (sum, p) => sum + p.transferRetail);
+  double get unitPrice => price + transferTotal;
+  double get lineTotal => unitPrice * quantity;
 
   Map<String, dynamic> toJson() => {
     'blank_id': blankProductId,
@@ -182,6 +186,35 @@ class Order {
   double get subtotal => items.fold(0, (sum, i) => sum + i.lineTotal);
   double get discountAmount => subtotal * (discountPct / 100);
   double get total => subtotal - discountAmount;
+
+  void dump() {
+    debugPrint('═══ ORDER DUMP ═══');
+    debugPrint('ID: ${id ?? '(not yet submitted)'}');
+    debugPrint('Customer: ${customerName ?? '???'}');
+    debugPrint('Salesperson: $salespersonName');
+    debugPrint('Discount: $discountPct%');
+    debugPrint('Payment: $paymentMethod');
+    debugPrint('Items (${items.length}):');
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      debugPrint('  [$i] ${item.blankName} size=${item.size}');
+      debugPrint('      price(blank)=\$${item.price.toStringAsFixed(2)}  qty=${item.quantity}');
+      debugPrint('      transferTotal=\$${item.transferTotal.toStringAsFixed(2)}');
+      debugPrint('      unitPrice=\$${item.unitPrice.toStringAsFixed(2)}');
+      debugPrint('      lineTotal=\$${item.lineTotal.toStringAsFixed(2)}');
+      if (item.placements.isEmpty) {
+        debugPrint('      placements: none');
+      } else {
+        for (final p in item.placements) {
+          debugPrint('      placement: ${p.slot} → ${p.transferName ?? '(empty)'} retail=\$${p.transferRetail.toStringAsFixed(2)}');
+        }
+      }
+    }
+    debugPrint('Subtotal: \$${subtotal.toStringAsFixed(2)}');
+    debugPrint('Discount amt: \$${discountAmount.toStringAsFixed(2)}');
+    debugPrint('Total: \$${total.toStringAsFixed(2)}');
+    debugPrint('══════════════════');
+  }
 
   Map<String, dynamic> toJson() => {
     'salesperson_name': salespersonName,

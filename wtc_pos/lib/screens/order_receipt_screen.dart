@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../models/order_model.dart';
 import '../theme/wingnut_theme.dart';
 import '../services/api_service.dart';
+import '../services/printer_service.dart';
 import 'add_item_screen.dart';
 import 'add_decals_screen.dart';
 import 'receipt_preview_screen.dart';
@@ -203,13 +205,18 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
     _syncFields();
     if (widget.order.items.isEmpty) return;
 
+    // Payment method required
+    if (widget.order.paymentMethod == 'not paid') {
+      _showErrorDialog('Please select a payment method before submitting.');
+      return;
+    }
+
     // Customer name required if any item has a transfer
     final hasTransfer = widget.order.items.any(
           (item) => item.placements.any((p) => p.hasDecal),
     );
     if (hasTransfer && (widget.order.customerName ?? '').isEmpty) {
-      setState(() => _submitError =
-      'Customer name is required for orders with transfers — they need to come back to pick it up.');
+      _showErrorDialog('Customer name is required for orders with transfers — they need to come back to pick it up.');
       return;
     }
 
@@ -222,55 +229,39 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
       final orderId = await widget.api.submitOrder(widget.order);
       if (!mounted) return;
       widget.order.id = orderId;
-      _showSuccess(orderId);
+      // Navigate to receipt preview as the confirmation screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ReceiptPreviewScreen(
+            order: widget.order,
+            isConfirmation: true,
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _submitError = e.toString();
-        _submitting = false;
-      });
+      setState(() => _submitting = false);
+      _showErrorDialog(e.toString());
     }
   }
 
-  void _showSuccess(String orderId) {
+  void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle,
-                color: Colors.green, size: 56),
-            const SizedBox(height: 16),
-            const Text('Order Submitted!',
-                style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Text(
-              'Order #$orderId',
-              style: const TextStyle(
-                  fontSize: 13,
-                  color: WingnutTheme.textSecondary,
-                  fontFamily: 'Courier'),
-            ),
-          ],
-        ),
+        title: const Text('Cannot Submit'),
+        content: Text(message),
         actions: [
           TextButton(
-            onPressed: () {
-              // Pop dialog + receipt screen back to home
-              Navigator.of(context)
-                ..pop()
-                ..pop();
-            },
-            child: const Text('Done'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
+
+  void _showSuccess(String orderId) {}
 
   @override
   Widget build(BuildContext context) {
@@ -423,24 +414,6 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                     large: true,
                   ),
 
-                  if (_submitError != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: WingnutTheme.danger.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: WingnutTheme.danger.withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        _submitError!,
-                        style: const TextStyle(
-                            color: WingnutTheme.danger, fontSize: 13),
-                      ),
-                    ),
-                  ],
-
                   const SizedBox(height: 100), // space for buttons
                 ],
               ),
@@ -453,55 +426,22 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                 color: WingnutTheme.surface,
                 border: Border(top: BorderSide(color: WingnutTheme.border)),
               ),
-              child: Row(
-                children: [
-                  // Save — 70%
-                  Expanded(
-                    flex: 7,
-                    child: ElevatedButton(
-                      onPressed:
-                      (order.items.isEmpty || _submitting) ? null : _submit,
-                      child: _submitting
-                          ? const SizedBox(
-                        height: 22,
-                        width: 22,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2.5),
-                      )
-                          : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.check_circle_outline, size: 20),
-                          SizedBox(width: 8),
-                          Text('Submit Order'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Print — 30%
-                  Expanded(
-                    flex: 3,
-                    child: ElevatedButton(
-                      onPressed: order.items.isEmpty
-                          ? null
-                          : () {
-                        _syncFields();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ReceiptPreviewScreen(order: widget.order),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange[700],
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Icon(Icons.print_outlined, size: 24),
-                    ),
-                  ),
-                ],
+              child: ElevatedButton(
+                onPressed: (order.items.isEmpty || _submitting) ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2.5))
+                    : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_outline, size: 20),
+                    SizedBox(width: 8),
+                    Text('Submit Order'),
+                  ],
+                ),
               ),
             ),
           ],
@@ -577,7 +517,7 @@ class _ItemCard extends StatelessWidget {
                       ),
                       if (item.quantity > 1)
                         Text(
-                          '${item.quantity} × \$${item.price.toStringAsFixed(2)}',
+                          '${item.quantity} × \$${item.unitPrice.toStringAsFixed(2)}',
                           style: const TextStyle(
                               fontSize: 11,
                               color: WingnutTheme.textSecondary),
@@ -743,7 +683,110 @@ class _PaymentSelector extends StatelessWidget {
   }
 }
 
-// ── Total row ────────────────────────────────────────────────────────────────
+// ── Success dialog ────────────────────────────────────────────────────────────
+
+class _SuccessDialog extends StatefulWidget {
+  final String orderId;
+  final Order order;
+  final VoidCallback onDone;
+
+  const _SuccessDialog({
+    required this.orderId,
+    required this.order,
+    required this.onDone,
+  });
+
+  @override
+  State<_SuccessDialog> createState() => _SuccessDialogState();
+}
+
+class _SuccessDialogState extends State<_SuccessDialog> {
+  bool _printing = false;
+  String? _printError;
+  int _printCount = 0;
+
+  Future<void> _print() async {
+    final printerService = context.read<PrinterService>();
+    final connected = await printerService.isConnected();
+    if (!connected) {
+      setState(() => _printError = 'No printer connected. Go to Printer on the main menu.');
+      return;
+    }
+    setState(() {
+      _printing = true;
+      _printError = null;
+    });
+    try {
+      await printerService.printOrder(widget.order);
+      setState(() {
+        _printCount++;
+        _printing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _printError = e.toString();
+        _printing = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.check_circle, color: Colors.green, size: 56),
+          const SizedBox(height: 16),
+          const Text('Order Submitted!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Text(
+            widget.orderId,
+            style: const TextStyle(
+                fontSize: 13,
+                color: WingnutTheme.textSecondary,
+                fontFamily: 'Courier'),
+          ),
+          const SizedBox(height: 24),
+
+          // Print button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _printing ? null : _print,
+              icon: _printing
+                  ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.print_outlined, size: 20),
+              label: Text(_printCount == 0
+                  ? 'Print Receipt'
+                  : 'Print Again ($_printCount printed)'),
+            ),
+          ),
+
+          if (_printError != null) ...[
+            const SizedBox(height: 8),
+            Text(_printError!,
+                style: const TextStyle(
+                    fontSize: 12, color: WingnutTheme.danger),
+                textAlign: TextAlign.center),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: widget.onDone,
+          child: const Text('Done'),
+        ),
+      ],
+    );
+  }
+}
 
 class _TotalRow extends StatelessWidget {
   final String label;

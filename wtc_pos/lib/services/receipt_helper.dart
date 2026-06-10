@@ -50,10 +50,9 @@ class ReceiptHelper {
 
     // Items
     for (final item in order.items) {
-      final lineTotal = item.lineTotal;
       final itemLine = formatLine(
         '${item.quantity} ${item.blankName}',
-        '\$${lineTotal.toStringAsFixed(2)}',
+        '\$${item.lineTotal.toStringAsFixed(2)}',
       );
       lines.add(ReceiptLine(text: itemLine, bold: true));
 
