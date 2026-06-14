@@ -68,7 +68,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
       lastDate: DateTime.now(),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: WingnutTheme.violet),
+          colorScheme: const ColorScheme.light(primary: WingnutTheme.teal),
         ),
         child: child!,
       ),
@@ -116,7 +116,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                 Row(
                   children: [
                     const Icon(Icons.calendar_today_outlined,
-                        color: WingnutTheme.violet, size: 18),
+                        color: WingnutTheme.teal, size: 18),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _pickDate,
@@ -125,7 +125,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: WingnutTheme.violet,
+                          color: WingnutTheme.teal,
                         ),
                       ),
                     ),
@@ -203,7 +203,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
           // ── Summary bar ───────────────────────────────────
           if (!_loading && _orders.isNotEmpty)
             Container(
-              color: WingnutTheme.violetLight,
+              color: WingnutTheme.tealLight,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
@@ -212,7 +212,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                     style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: WingnutTheme.violetDark),
+                        color: WingnutTheme.tealDark),
                   ),
                   const Spacer(),
                   Text(
@@ -220,7 +220,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                     style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: WingnutTheme.violetDark),
+                        color: WingnutTheme.tealDark),
                   ),
                 ],
               ),
@@ -231,7 +231,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             child: _loading
                 ? const Center(
                 child: CircularProgressIndicator(
-                    color: WingnutTheme.violet))
+                    color: WingnutTheme.teal))
                 : _error != null
                 ? Center(
               child: Column(
@@ -270,7 +270,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             )
                 : RefreshIndicator(
               onRefresh: _load,
-              color: WingnutTheme.violet,
+              color: WingnutTheme.teal,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _orders.length,

@@ -165,7 +165,7 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
         // Item header
         Container(
           width: double.infinity,
-          color: WingnutTheme.violetLight,
+          color: WingnutTheme.tealLight,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +175,7 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: WingnutTheme.violetDark,
+                  color: WingnutTheme.tealDark,
                 ),
               ),
               if (widget.item.size.isNotEmpty)
@@ -254,7 +254,7 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
             height: 220,
             decoration: BoxDecoration(
               border:
-              Border.all(color: WingnutTheme.violetMid, width: 2.5),
+              Border.all(color: WingnutTheme.tealMid, width: 2.5),
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -311,7 +311,7 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: WingnutTheme.violetMid),
+                  CircularProgressIndicator(color: WingnutTheme.tealMid),
                   SizedBox(height: 12),
                   Text('Checking stock...',
                       style: TextStyle(color: Colors.white)),
@@ -339,7 +339,7 @@ class _SlotTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final filled = placement.hasDecal;
     return Material(
-      color: filled ? WingnutTheme.violetLight : WingnutTheme.surface,
+      color: filled ? WingnutTheme.tealLight : WingnutTheme.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -354,7 +354,7 @@ class _SlotTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: filled
-                      ? WingnutTheme.violet
+                      ? WingnutTheme.teal
                       : WingnutTheme.border,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -375,7 +375,7 @@ class _SlotTile extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: filled
-                            ? WingnutTheme.violetDark
+                            ? WingnutTheme.tealDark
                             : WingnutTheme.textPrimary,
                       ),
                     ),

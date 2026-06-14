@@ -9,7 +9,7 @@ class AppSettings extends ChangeNotifier {
   static const String adminPin = '1080';
 
   String? _salespersonName;
-  String _baseUrl = 'http://localhost:3001';
+  String _baseUrl = 'https://wtc.wingnutstables.com';
 
   String? get salespersonName => _salespersonName;
   String get baseUrl => _baseUrl;
@@ -18,7 +18,7 @@ class AppSettings extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _salespersonName = prefs.getString(_keyName);
-    _baseUrl = prefs.getString(_keyBaseUrl) ?? 'http://localhost:3001';
+    _baseUrl = prefs.getString(_keyBaseUrl) ?? 'https://wtc.wingnutstables.com';
     notifyListeners();
   }
 

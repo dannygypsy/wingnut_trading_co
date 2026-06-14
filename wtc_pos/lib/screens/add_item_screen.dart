@@ -165,7 +165,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: WingnutTheme.violet,
+        backgroundColor: WingnutTheme.teal,
         title: Text(isFirstItem ? 'Scan Item' : 'Add Another Item'),
         leading: isFirstItem
             ? IconButton(
@@ -203,7 +203,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     height: 240,
                     decoration: BoxDecoration(
                       border: Border.all(
-                          color: WingnutTheme.violetMid, width: 2.5),
+                          color: WingnutTheme.tealMid, width: 2.5),
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
@@ -258,7 +258,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CircularProgressIndicator(
-                              color: WingnutTheme.violetMid),
+                              color: WingnutTheme.tealMid),
                           SizedBox(height: 12),
                           Text('Looking up item...',
                               style: TextStyle(color: Colors.white)),
@@ -293,7 +293,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         textInputAction: TextInputAction.search,
                         onSubmitted: (_) => _onSearch(),
                         decoration: const InputDecoration(
-                          hintText: 'WTC-XXXXXXXX or "dragon sticker"',
+                          hintText: 'Gildan, Bella+Canvas, etc.',
                           prefixIcon: Icon(Icons.search,
                               color: WingnutTheme.textSecondary),
                           contentPadding: EdgeInsets.symmetric(

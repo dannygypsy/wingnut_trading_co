@@ -75,7 +75,7 @@ class _PinDialogState extends State<PinDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.lock_outline,
-                color: WingnutTheme.violet, size: 36),
+                color: WingnutTheme.teal, size: 36),
             const SizedBox(height: 12),
             Text(widget.title,
                 style: const TextStyle(
@@ -104,11 +104,11 @@ class _PinDialogState extends State<PinDialog> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: filled
-                          ? WingnutTheme.violet
+                          ? WingnutTheme.teal
                           : WingnutTheme.border,
                       border: Border.all(
                         color: filled
-                            ? WingnutTheme.violet
+                            ? WingnutTheme.teal
                             : WingnutTheme.textSecondary,
                         width: 1.5,
                       ),
@@ -157,7 +157,7 @@ class _PinDialogState extends State<PinDialog> {
                 child: Material(
                   color: label == '⌫'
                       ? WingnutTheme.border
-                      : WingnutTheme.violetLight,
+                      : WingnutTheme.tealLight,
                   borderRadius: BorderRadius.circular(10),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
@@ -171,7 +171,7 @@ class _PinDialogState extends State<PinDialog> {
                           fontWeight: FontWeight.w600,
                           color: label == '⌫'
                               ? WingnutTheme.textSecondary
-                              : WingnutTheme.violetDark,
+                              : WingnutTheme.tealDark,
                         ),
                       ),
                     ),

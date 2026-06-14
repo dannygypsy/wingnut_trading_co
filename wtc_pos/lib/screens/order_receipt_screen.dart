@@ -93,7 +93,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.attach_money, color: WingnutTheme.violet),
+              leading: const Icon(Icons.attach_money, color: WingnutTheme.teal),
               title: const Text('Change Price'),
               onTap: () {
                 Navigator.pop(context);
@@ -101,7 +101,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.exposure, color: WingnutTheme.violet),
+              leading: const Icon(Icons.exposure, color: WingnutTheme.teal),
               title: const Text('Change Quantity'),
               onTap: () {
                 Navigator.pop(context);
@@ -110,7 +110,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
             ),
             if (item.hasPlacementSlots)
               ListTile(
-                leading: const Icon(Icons.edit, color: WingnutTheme.violet),
+                leading: const Icon(Icons.edit, color: WingnutTheme.teal),
                 title: const Text('Edit Transfers'),
                 onTap: () {
                   Navigator.pop(context);
@@ -366,7 +366,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                             ? 'Customer Name *'
                             : 'Customer Name (optional)',
                         prefixIcon: const Icon(Icons.person_outline,
-                            color: WingnutTheme.violet),
+                            color: WingnutTheme.teal),
                       ),
                       onChanged: (_) => setState(() {}),
                     );
@@ -384,7 +384,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Discount %',
                       prefixIcon: Icon(Icons.local_offer_outlined,
-                          color: WingnutTheme.violet),
+                          color: WingnutTheme.teal),
                       suffixText: '%',
                     ),
                     onChanged: (_) => setState(() {}),
@@ -411,7 +411,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                       labelText: 'Notes (optional)',
                       hintText: 'Special instructions...',
                       prefixIcon: Icon(Icons.notes_outlined,
-                          color: WingnutTheme.violet),
+                          color: WingnutTheme.teal),
                       counterText: '',
                       alignLabelWithHint: true,
                     ),
@@ -568,7 +568,7 @@ class _ItemCard extends StatelessWidget {
                         p.hasDecal ? Icons.circle : Icons.circle_outlined,
                         size: 8,
                         color: p.hasDecal
-                            ? WingnutTheme.violet
+                            ? WingnutTheme.teal
                             : WingnutTheme.border,
                       ),
                       const SizedBox(width: 8),
@@ -588,7 +588,7 @@ class _ItemCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: WingnutTheme.violetDark,
+                            color: WingnutTheme.tealDark,
                           ),
                         ),
                       ],
@@ -678,7 +678,7 @@ class _PaymentSelector extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.payment_outlined, color: WingnutTheme.violet, size: 20),
+            Icon(Icons.payment_outlined, color: WingnutTheme.teal, size: 20),
             const SizedBox(width: 12),
             Text('Payment',
                 style: const TextStyle(

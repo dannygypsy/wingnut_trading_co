@@ -149,7 +149,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
                         printer.printer?.address == device.address;
                     return Material(
                       color: isSelected
-                          ? WingnutTheme.violetLight
+                          ? WingnutTheme.tealLight
                           : WingnutTheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
@@ -163,7 +163,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
                               Icon(
                                 Icons.print_outlined,
                                 color: isSelected
-                                    ? WingnutTheme.violet
+                                    ? WingnutTheme.teal
                                     : WingnutTheme.textSecondary,
                               ),
                               const SizedBox(width: 12),
@@ -177,7 +177,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         color: isSelected
-                                            ? WingnutTheme.violetDark
+                                            ? WingnutTheme.tealDark
                                             : WingnutTheme.textPrimary,
                                       ),
                                     ),
@@ -193,7 +193,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
                               ),
                               if (isSelected)
                                 const Icon(Icons.check_circle,
-                                    color: WingnutTheme.violet),
+                                    color: WingnutTheme.teal),
                             ],
                           ),
                         ),

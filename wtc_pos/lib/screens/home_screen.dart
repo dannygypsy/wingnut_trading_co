@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: WingnutTheme.violet,
+                            color: WingnutTheme.teal,
                             letterSpacing: 2,
                           ),
                         ),
@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: WingnutTheme.violet.withOpacity(0.6),
+                            color: WingnutTheme.teal.withOpacity(0.6),
                             letterSpacing: 1.5,
                           ),
                         ),
@@ -91,7 +91,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.qr_code_scanner_rounded,
                 label: 'New Order',
                 description: 'Scan items and build a new order',
-                color: WingnutTheme.violet,
+                color: WingnutTheme.teal,
                 onTap: () {
                   final settings = context.read<AppSettings>();
                   final order = Order(
@@ -113,7 +113,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.receipt_long_outlined,
                 label: 'View Orders',
                 description: 'Browse and review past orders',
-                color: WingnutTheme.violetDark,
+                color: WingnutTheme.tealDark,
                 onTap: () {
                   final settings = context.read<AppSettings>();
                   final api = ApiService(settings.baseUrl);

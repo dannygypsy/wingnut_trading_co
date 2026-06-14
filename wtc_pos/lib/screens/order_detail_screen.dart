@@ -173,7 +173,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       body: _loading
           ? const Center(
-          child: CircularProgressIndicator(color: WingnutTheme.violet))
+          child: CircularProgressIndicator(color: WingnutTheme.teal))
           : _error != null
           ? Center(
         child: Column(
@@ -267,7 +267,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: WingnutTheme.violet))
+                          strokeWidth: 2, color: WingnutTheme.teal))
                 else
                   GestureDetector(
                     onTap: _showStatusPicker,
@@ -386,7 +386,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Row(
                             children: [
                               const Icon(Icons.circle,
-                                  size: 6, color: WingnutTheme.violet),
+                                  size: 6, color: WingnutTheme.teal),
                               const SizedBox(width: 8),
                               Text(slot,
                                   style: const TextStyle(
@@ -401,7 +401,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: WingnutTheme.violetDark,
+                                      color: WingnutTheme.tealDark,
                                     )),
                               ),
                               if (transferRetail > 0)

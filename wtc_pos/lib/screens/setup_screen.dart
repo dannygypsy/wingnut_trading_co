@@ -54,7 +54,7 @@ class SetupScreen extends StatelessWidget {
                   fontFamily: 'Vova',
                   fontSize: 36,
                   fontWeight: FontWeight.w800,
-                  color: WingnutTheme.violet,
+                  color: WingnutTheme.teal,
                   letterSpacing: 3,
                 ),
               ),

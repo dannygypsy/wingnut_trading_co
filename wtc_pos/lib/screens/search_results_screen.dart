@@ -33,11 +33,11 @@ class SearchResultsScreen extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: WingnutTheme.violetLight,
+                        color: WingnutTheme.tealLight,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.checkroom_outlined,
-                          color: WingnutTheme.violet, size: 22),
+                          color: WingnutTheme.teal, size: 22),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -116,7 +116,7 @@ class _Chip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: WingnutTheme.violetLight,
+        color: WingnutTheme.tealLight,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -124,7 +124,7 @@ class _Chip extends StatelessWidget {
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: WingnutTheme.violetDark,
+          color: WingnutTheme.tealDark,
         ),
       ),
     );

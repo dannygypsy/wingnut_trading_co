@@ -87,7 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 labelText: 'Salesperson Name',
                 hintText: 'e.g. Sarah',
                 prefixIcon:
-                Icon(Icons.person_outline, color: WingnutTheme.violet),
+                Icon(Icons.person_outline, color: WingnutTheme.teal),
               ),
             ),
             const SizedBox(height: 8),
@@ -118,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 labelText: 'Backend URL',
                 hintText: 'http://192.168.1.x:3001',
                 prefixIcon:
-                Icon(Icons.wifi_outlined, color: WingnutTheme.violet),
+                Icon(Icons.wifi_outlined, color: WingnutTheme.teal),
               ),
             ),
             const SizedBox(height: 8),
