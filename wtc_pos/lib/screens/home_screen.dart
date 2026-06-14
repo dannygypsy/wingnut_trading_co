@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../models/app_settings.dart';
 import '../models/order_model.dart';
@@ -10,9 +12,25 @@ import 'add_item_screen.dart';
 import 'orders_list_screen.dart';
 import 'printer_screen.dart';
 import 'settings_screen.dart';
+import 'stock_check_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      setState(() => _version = info.version);
+    });
+  }
 
   Future<void> _openSettings(BuildContext context) async {
     final settings = context.read<AppSettings>();
@@ -31,8 +49,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<AppSettings>();
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -88,10 +104,10 @@ class HomeScreen extends StatelessWidget {
 
               // New Order button
               _MenuCard(
-                icon: Icons.qr_code_scanner_rounded,
+                icon: CupertinoIcons.qrcode,
                 label: 'New Order',
                 description: 'Scan items and build a new order',
-                color: WingnutTheme.teal,
+                color: WingnutTheme.tealMid,
                 onTap: () {
                   final settings = context.read<AppSettings>();
                   final order = Order(
@@ -110,10 +126,10 @@ class HomeScreen extends StatelessWidget {
 
               // View Orders button
               _MenuCard(
-                icon: Icons.receipt_long_outlined,
+                icon: CupertinoIcons.shopping_cart,
                 label: 'View Orders',
                 description: 'Browse and review past orders',
-                color: WingnutTheme.tealDark,
+                color: WingnutTheme.teal,
                 onTap: () {
                   final settings = context.read<AppSettings>();
                   final api = ApiService(settings.baseUrl);
@@ -127,14 +143,31 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // Stock Check button
+              _MenuCard(
+                icon: CupertinoIcons.search,
+                label: 'Stock Check',
+                description: 'Scan an item to check availability',
+                color: WingnutTheme.tealDark,
+                onTap: () {
+                  final settings = context.read<AppSettings>();
+                  final api = ApiService(settings.baseUrl);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => StockCheckScreen(api: api),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
               // Printer
               Consumer<PrinterService>(
                 builder: (context, printerService, _) {
                   final connected = printerService.connected;
                   return _MenuCard(
-                    icon: connected
-                        ? Icons.bluetooth_connected
-                        : Icons.print_outlined,
+                    icon: CupertinoIcons.printer,
                     label: 'Printer',
                     description: connected
                         ? 'Connected: ${printerService.printer?.name ?? ''}'
@@ -155,7 +188,7 @@ class HomeScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
-                    'Wingnut Sales v1.0',
+                    'Wingnut Sales v$_version',
                     style: TextStyle(
                       fontSize: 12,
                       color: WingnutTheme.textSecondary.withOpacity(0.5),
@@ -196,7 +229,7 @@ class _MenuCard extends StatelessWidget {
         onTap: onTap,
         splashColor: Colors.white.withOpacity(0.1),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
           child: Row(
             children: [
               Container(

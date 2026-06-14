@@ -5,7 +5,7 @@ class WingnutTheme {
   static const Color teal = Color(0xFF0DB87A);        // primary action (deep emerald from icon bottom)
   static const Color tealDark = Color(0xFF098A5C);    // pressed / dark variant
   static const Color tealLight = Color(0xFFD0FBF0);   // tinted backgrounds, chips
-  static const Color tealMid = Color(0xFF35D6AC);     // accents, focus rings (icon midpoint)
+  static const Color tealMid = Color(0xFF1FB896);     // accents, focus rings (icon midpoint)
   static const Color aqua = Color(0xFF62F6EA);        // highlight / icon top gradient
 
   static const Color background = Color(0xFFE8F5F0);  // very light teal tint (replaces grey)

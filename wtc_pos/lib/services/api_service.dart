@@ -88,6 +88,31 @@ class ApiService {
     }
   }
 
+  /// Check stock for a scanned QR value (e.g. WTC-XXXXXXXX or WTC-XXXXXXXX|2XL)
+  Future<StockResult> checkStock(String pid) async {
+    try {
+      final detail = await _dio.get(
+        '/api/wtc/pos/inventory/lookup',
+        queryParameters: {'pid': pid},
+      );
+      final stock = await _dio.get(
+        '/api/wtc/pos/inventory/stock',
+        queryParameters: {'pid': pid},
+      );
+      final d = detail.data as Map<String, dynamic>;
+      final s = stock.data as Map<String, dynamic>;
+      return StockResult(
+        name: d['name'] ?? '',
+        size: d['size'] ?? '',
+        category: d['category'] ?? '',
+        remaining: int.tryParse(s['remaining'].toString()) ?? 0,
+        inStock: s['in_stock'] == true || s['in_stock'] == 'true',
+      );
+    } on DioException catch (e) {
+      throw _friendlyError(e);
+    }
+  }
+
   String _friendlyError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
@@ -98,4 +123,20 @@ class ApiService {
     }
     return e.response?.data?['message'] ?? e.response?.data?['error'] ?? 'An unexpected error occurred.';
   }
+}
+
+class StockResult {
+  final String name;
+  final String size;
+  final String category;
+  final int remaining;
+  final bool inStock;
+
+  StockResult({
+    required this.name,
+    required this.size,
+    required this.category,
+    required this.remaining,
+    required this.inStock,
+  });
 }
