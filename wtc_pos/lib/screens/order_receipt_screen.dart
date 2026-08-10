@@ -298,7 +298,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                     onPressed: () {
                       Navigator.of(context)
                         ..pop()
-                        ..pop();
+                        ..popUntil((route) => route.isFirst);
                     },
                     child: const Text('Cancel Order',
                         style: TextStyle(color: Colors.red)),
