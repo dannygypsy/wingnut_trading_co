@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// CASH FLOW
+// ─────────────────────────────────────────
+
+model CashFlow {
+  id                   String    @id @default(uuid())
+  transaction_date     DateTime  @db.Date
+  type                 String    // "income" | "expense"
+  category             String
+  description          String
+  amount               Decimal   @db.Decimal(10, 2)
+  payment_method       String?
+  vendor               String?
+  notes                String?   @db.Text
+  created_by           String
+  created_at           DateTime  @default(now())
+  related_order_id     String?
+  related_inventory_id String?
+
+  order     Order?     @relation(fields: [related_order_id], references: [id])
+
+  @@map("wtc_cash_flow")
+}
+
+// ─────────────────────────────────────────
+// INVENTORY
+// ─────────────────────────────────────────
+
+model Inventory {
+  id           String    @id @default(uuid())
+  product_id   String?
+  category     String
+  name         String
+  size         String?
+  full_name    String
+  type         String?   // "blank" | "transfer" | "other"
+  cost         Decimal   @db.Decimal(10, 2)
+  retail       Decimal   @db.Decimal(10, 2)
+  purchased_on DateTime  @db.Date
+  num_purchased Int
+  remaining    Int
+  image        String?
+
+  orderItems         OrderItem[]
+  orderCustomizations OrderCustomization[]
+
+  @@map("wtc_inventory")
+}
+
+model InventoryCategory {
+  id         Int    @id @default(autoincrement())
+  name       String
+  sort_order Int    @default(0)
+
+  placements InventoryPlacement[]
+
+  @@map("wtc_inventory_categories")
+}
+
+model InventoryPlacement {
+  id          Int    @id @default(autoincrement())
+  category_id Int
+  name        String
+  sort_order  Int    @default(0)
+
+  category InventoryCategory @relation(fields: [category_id], references: [id])
+
+  @@map("wtc_inventory_placements")
+}
+
+// ─────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────
+
+model Order {
+  id              String    @id @default(uuid())
+  customer        String?
+  created_at      DateTime  @default(now())
+  total           Decimal   @db.Decimal(10, 2)
+  status          String    @default("pending") // "pending" | "completed" | "delivered" | "canceled"
+  payment_method  String?
+  discount_desc   String?
+  discount_percent Decimal? @db.Decimal(5, 2)
+
+  items           OrderItem[]
+  customizations  OrderCustomization[]
+  cashFlow        CashFlow[]
+
+  @@map("wtc_orders")
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  order_id     String
+  inventory_id String?
+  name         String
+  retail       Decimal  @db.Decimal(10, 2)
+  quantity     Int      @default(1)
+
+  order        Order      @relation(fields: [order_id], references: [id])
+  inventory    Inventory? @relation(fields: [inventory_id], references: [id])
+  customizations OrderCustomization[]
+
+  @@map("wtc_order_items")
+}
+
+model OrderCustomization {
+  id           String   @id @default(uuid())
+  order_id     String
+  item_id      String
+  inventory_id String?
+  name         String
+  retail       Decimal  @db.Decimal(10, 2)
+
+  order     Order      @relation(fields: [order_id], references: [id])
+  item      OrderItem  @relation(fields: [item_id], references: [id])
+  inventory Inventory? @relation(fields: [inventory_id], references: [id])
+
+  @@map("wtc_order_customizations")
+}
