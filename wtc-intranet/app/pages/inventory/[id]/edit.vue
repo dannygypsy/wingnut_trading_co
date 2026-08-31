@@ -60,6 +60,12 @@ async function deleteItem() {
     confirmDelete.value = false
   }
 }
+
+const margin = computed(() => {
+  const cost = parseFloat(form.cost) || 0
+  const retail = parseFloat(form.retail) || 0
+  return retail - cost
+})
 </script>
 
 <template>
@@ -173,6 +179,25 @@ async function deleteItem() {
           <label class="block text-xs font-semibold text-wtc-text-secondary uppercase tracking-wider mb-1.5">Remaining <span class="text-red-500">*</span></label>
           <input v-model="form.remaining" type="number" min="0" required
                  class="w-full rounded-xl border border-wtc-border bg-wtc-bg px-3 py-2 text-sm text-wtc-text-primary focus:outline-none focus:ring-2 focus:ring-wtc-teal" />
+        </div>
+      </div>
+
+      <!-- Profit Margin Preview -->
+      <div class="rounded-xl border border-wtc-teal-mid bg-wtc-teal-light p-4">
+        <p class="text-xs font-semibold text-wtc-teal mb-3 uppercase tracking-wider">Profit Margin Preview</p>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="text-wtc-text-secondary">Cost</span>
+            <p class="font-bold text-wtc-text-primary">${{ (parseFloat(form.cost) || 0).toFixed(2) }}</p>
+          </div>
+          <div>
+            <span class="text-wtc-text-secondary">Retail</span>
+            <p class="font-bold text-wtc-text-primary">${{ (parseFloat(form.retail) || 0).toFixed(2) }}</p>
+          </div>
+          <div>
+            <span class="text-wtc-text-secondary">Margin</span>
+            <p class="font-bold" :class="margin >= 0 ? 'text-emerald-600' : 'text-red-600'">${{ margin.toFixed(2) }}</p>
+          </div>
         </div>
       </div>
 

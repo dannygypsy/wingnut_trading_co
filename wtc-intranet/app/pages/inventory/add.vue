@@ -25,6 +25,55 @@ async function submit() {
     submitting.value = false
   }
 }
+
+// Live product search
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+const searchResults = ref<any[]>([])
+const selectedProduct = ref<any>(null)
+const showSuggestions = ref(false)
+
+function onNameInput(value: string) {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (value.length < 3) {
+    showSuggestions.value = false
+    searchResults.value = []
+    return
+  }
+  searchTimer = setTimeout(async () => {
+    const data = await $fetch<{ results: any[] }>(`/api/inventory/search?q=${encodeURIComponent(value)}`)
+    const seen = new Set<string>()
+    searchResults.value = (data.results || []).filter(r => {
+      if (!r.product_id || seen.has(r.product_id)) return false
+      seen.add(r.product_id)
+      return true
+    })
+    showSuggestions.value = searchResults.value.length > 0
+  }, 350)
+}
+
+function selectProduct(r: any) {
+  selectedProduct.value = r
+  showSuggestions.value = false
+  form.product_id = r.product_id
+  form.name = r.name || ''
+  form.full_name = r.full_name || ''
+  form.category = r.category || ''
+  form.retail = r.retail ? Number(r.retail).toFixed(2) : ''
+  form.type = r.type || ''
+  if (r.size) form.size = r.size
+}
+
+function clearProduct() {
+  selectedProduct.value = null
+  form.product_id = ''
+}
+
+// Profit margin preview
+const margin = computed(() => {
+  const cost = parseFloat(form.cost) || 0
+  const retail = parseFloat(form.retail) || 0
+  return retail - cost
+})
 </script>
 
 <template>
@@ -53,12 +102,40 @@ async function submit() {
         <div>
           <label class="block text-xs font-semibold text-wtc-text-secondary uppercase tracking-wider mb-1.5">Name <span class="text-red-500">*</span></label>
           <input v-model="form.name" type="text" required placeholder="e.g. Gildan Softstyle"
+                 maxlength="23"
+                 @input="onNameInput(form.name)"
                  class="w-full rounded-xl border border-wtc-border bg-wtc-bg px-3 py-2 text-sm text-wtc-text-primary focus:outline-none focus:ring-2 focus:ring-wtc-teal" />
+          <p class="mt-1 text-xs text-wtc-text-secondary">{{ form.name.length }}/23 characters</p>
         </div>
         <div>
           <label class="block text-xs font-semibold text-wtc-text-secondary uppercase tracking-wider mb-1.5">Full Name <span class="text-red-500">*</span></label>
           <input v-model="form.full_name" type="text" required placeholder="e.g. Gildan Softstyle T-Shirt"
                  class="w-full rounded-xl border border-wtc-border bg-wtc-bg px-3 py-2 text-sm text-wtc-text-primary focus:outline-none focus:ring-2 focus:ring-wtc-teal" />
+        </div>
+      </div>
+
+      <!-- Product suggestions -->
+      <div v-if="showSuggestions || selectedProduct" class="mt-3 p-3 rounded-xl border border-wtc-teal-mid bg-wtc-teal-light">
+        <p class="text-xs font-semibold text-wtc-teal mb-2">Existing product found — reuse product ID?</p>
+
+        <div v-if="selectedProduct" class="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-wtc-teal-mid">
+          <FaIcon :icon="['fas', 'check']" class="text-wtc-teal text-xs" />
+          <span class="text-sm font-semibold text-wtc-text-primary">Using product ID for "{{ selectedProduct.name }}"</span>
+          <button type="button" @click="clearProduct" class="ml-auto text-xs text-wtc-text-secondary hover:text-wtc-teal underline">Clear</button>
+        </div>
+
+        <div v-else class="flex flex-col gap-1">
+          <button v-for="r in searchResults" :key="r.product_id"
+                  type="button" @click="selectProduct(r)"
+                  class="text-left px-3 py-2 rounded-lg bg-white border border-wtc-teal-mid hover:bg-wtc-teal-light transition-colors text-sm">
+            <span class="font-semibold text-wtc-text-primary">{{ r.name }}</span>
+            <span v-if="r.size" class="ml-2 text-xs text-wtc-text-secondary">{{ r.size }}</span>
+            <span class="ml-2 font-mono text-xs text-wtc-text-secondary">{{ r.product_id?.substring(0, 8) }}…</span>
+          </button>
+          <button type="button" @click="showSuggestions = false"
+                  class="text-left px-3 py-2 rounded-lg bg-white border border-wtc-border hover:bg-wtc-bg transition-colors text-sm text-wtc-text-secondary">
+            Create new product ID
+          </button>
         </div>
       </div>
 
@@ -133,6 +210,25 @@ async function submit() {
           <label class="block text-xs font-semibold text-wtc-text-secondary uppercase tracking-wider mb-1.5">Quantity <span class="text-red-500">*</span></label>
           <input v-model="form.num_purchased" type="number" min="1" required placeholder="0"
                  class="w-full rounded-xl border border-wtc-border bg-wtc-bg px-3 py-2 text-sm text-wtc-text-primary focus:outline-none focus:ring-2 focus:ring-wtc-teal" />
+        </div>
+      </div>
+
+      <!-- Profit Margin Preview -->
+      <div class="rounded-xl border border-wtc-teal-mid bg-wtc-teal-light p-4">
+        <p class="text-xs font-semibold text-wtc-teal mb-3 uppercase tracking-wider">Profit Margin Preview</p>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="text-wtc-text-secondary">Cost</span>
+            <p class="font-bold text-wtc-text-primary">${{ (parseFloat(form.cost) || 0).toFixed(2) }}</p>
+          </div>
+          <div>
+            <span class="text-wtc-text-secondary">Retail</span>
+            <p class="font-bold text-wtc-text-primary">${{ (parseFloat(form.retail) || 0).toFixed(2) }}</p>
+          </div>
+          <div>
+            <span class="text-wtc-text-secondary">Margin</span>
+            <p class="font-bold" :class="margin >= 0 ? 'text-emerald-600' : 'text-red-600'">${{ margin.toFixed(2) }}</p>
+          </div>
         </div>
       </div>
 
