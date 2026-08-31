@@ -101,7 +101,7 @@ function formatCurrency(amount: number) {
           <label class="block text-xs font-semibold text-wtc-text-secondary uppercase tracking-wider mb-1.5">Type</label>
           <select
               v-model="typeFilter"
-              class="w-full rounded-xl border border-wtc-border bg-wtc-bg px-3 py-2 text-sm text-wtc-text-primary focus:outline-none focus:ring-2 focus:ring-wtc-teal"
+              class="w-full h-11.5 appearance-none rounded-xl border border-wtc-border bg-wtc-bg px-3 py-2 text-sm text-wtc-text-primary focus:outline-none focus:ring-2 focus:ring-wtc-teal"
           >
             <option value="">All Types</option>
             <option value="income">Income</option>
