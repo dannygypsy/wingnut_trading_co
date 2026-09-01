@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
 }
 
 datasource db {
@@ -41,6 +42,9 @@ model Inventory {
   num_purchased Int
   remaining     Int
 
+  orderItems OrderItem[]
+  orderCustomizations OrderCustomization[]
+
   @@map("wtc_inventory")
 }
 
@@ -65,29 +69,36 @@ model InventoryPlacement {
 }
 
 model Order {
-  id               String   @id @default(uuid()) @db.VarChar(255)
-  customer         String   @db.VarChar(255)
-  salesperson_name String?  @db.VarChar(100)
-  notes            String?  @db.VarChar(512)
-  created_at       DateTime @db.DateTime(0)
-  created_by       String   @db.VarChar(255)
-  total            Float    @default(0)
-  status           String   @db.VarChar(255)
-  discount_desc    String?  @db.VarChar(255)
+  id               String              @id @default(uuid()) @db.VarChar(255)
+  customer         String              @db.VarChar(255)
+  salesperson_name String?             @db.VarChar(100)
+  notes            String?             @db.VarChar(512)
+  created_at       DateTime            @db.DateTime(0)
+  created_by       String              @db.VarChar(255)
+  total            Float               @default(0)
+  status           String              @db.VarChar(255)
+  discount_desc    String?             @db.VarChar(255)
   discount_percent Float?
-  payment_method   String   @default("not paid") @db.VarChar(255)
+  payment_method   String              @default("not paid") @db.VarChar(255)
+
+  items            OrderItem[]
+  customizations   OrderCustomization[]
 
   @@map("wtc_orders")
 }
 
 model OrderItem {
-  id           String  @id @default(uuid()) @db.VarChar(255)
-  order_id     String  @db.VarChar(255)
-  inventory_id String  @db.VarChar(255)
-  name         String  @db.VarChar(255)
+  id           String   @id @default(uuid()) @db.VarChar(255)
+  order_id     String   @db.VarChar(255)
+  inventory_id String?  @db.VarChar(255)   // <-- add the ?
+  name         String   @db.VarChar(255)
   retail       Float
   quantity     Int
-  size         String? @db.VarChar(10)
+  size         String?  @db.VarChar(10)
+
+  order          Order                @relation(fields: [order_id], references: [id])
+  inventory      Inventory?           @relation(fields: [inventory_id], references: [id])
+  customizations OrderCustomization[]
 
   @@map("wtc_order_items")
 }
@@ -101,6 +112,10 @@ model OrderCustomization {
   name         String  @db.VarChar(255)
   retail       Float
   notes        String? @db.VarChar(512)
+
+  order Order     @relation(fields: [order_id], references: [id])
+  item  OrderItem @relation(fields: [item_id], references: [id])
+  inventory Inventory? @relation(fields: [inventory_id], references: [id])
 
   @@map("wtc_order_customizations")
 }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ title: 'Dashboard' })
+
 const { data: dashboard, pending } = await useFetch('/api/dashboard')
 
 const greeting = computed(() => {

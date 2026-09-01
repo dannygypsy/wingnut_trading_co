@@ -1,3 +1,5 @@
+import { sanitizeBigInt } from '#server/utils/bigint.ts'
+
 export default defineEventHandler(async (event) => {
     const pid = ((getQuery(event).pid as string) || '').trim()
     if (!pid) throw createError({ statusCode: 400, message: 'pid is required.' })
@@ -44,7 +46,7 @@ export default defineEventHandler(async (event) => {
     const row = rows[0]
     const cat = row.category?.toLowerCase() || ''
 
-    return {
+    return sanitizeBigInt({
         success: true,
         product_id: pidPart,
         name: row.name,
@@ -56,5 +58,5 @@ export default defineEventHandler(async (event) => {
         placements: row.placements
             ? row.placements.split(',').map((p: string) => p.trim()).filter(Boolean)
             : []
-    }
+    })
 })

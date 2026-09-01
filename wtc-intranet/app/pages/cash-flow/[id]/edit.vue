@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useHead({ title: 'Edit Cash Flow' })
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id as string

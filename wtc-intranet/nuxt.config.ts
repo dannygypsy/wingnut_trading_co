@@ -10,4 +10,10 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@vueuse/nuxt',
   ],
+  app: {
+    head: {
+      title: 'Wingnut Trading Co',
+      titleTemplate: '%s | Wingnut Trading Co'
+    }
+  }
 })

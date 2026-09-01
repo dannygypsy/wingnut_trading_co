@@ -1,3 +1,5 @@
+import { sanitizeBigInt } from '#server/utils/bigint.ts'
+
 export default defineEventHandler(async (event) => {
     const pid = ((getQuery(event).pid as string) || '').trim()
     if (!pid) throw createError({ statusCode: 400, message: 'pid is required.' })

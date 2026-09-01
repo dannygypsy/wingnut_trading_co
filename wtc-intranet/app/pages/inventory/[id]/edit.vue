@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useHead({ title: 'Edit Inventory' })
 const route = useRoute()
 const id = route.params.id as string
 

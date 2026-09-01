@@ -1,3 +1,5 @@
+import { sanitizeBigInt } from '#server/utils/bigint.ts'
+
 export default defineEventHandler(async (event) => {
     const id = getRouterParam(event, 'id') || ''
 
@@ -23,5 +25,5 @@ export default defineEventHandler(async (event) => {
     }
 
     order.items = items
-    return { success: true, order }
+    return sanitizeBigInt({ success: true, order })
 })

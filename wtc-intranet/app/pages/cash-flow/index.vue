@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useHead({ title: 'Cash Flow' })
 const startDate = ref('')
 const endDate = ref('')
 const typeFilter = ref('')

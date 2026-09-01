@@ -1,3 +1,5 @@
+import { sanitizeBigInt } from '#server/utils/bigint.ts'
+
 export default defineEventHandler(async (event) => {
     const q = ((getQuery(event).q as string) || '').trim()
     if (!q) throw createError({ statusCode: 400, message: 'Query parameter q is required.' })
@@ -42,5 +44,5 @@ export default defineEventHandler(async (event) => {
             : []
     }))
 
-    return { success: true, results }
+    return sanitizeBigInt({ success: true, results })
 })

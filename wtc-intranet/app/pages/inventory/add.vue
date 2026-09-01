@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ title: 'Add Inventory' })
+
 const { data: categories } = await useFetch('/api/inventory/categories')
 
 const form = reactive({

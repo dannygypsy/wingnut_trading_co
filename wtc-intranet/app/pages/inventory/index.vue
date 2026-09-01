@@ -1,6 +1,6 @@
 <script setup lang="ts">
-
 useHead({
+  title: 'Inventory',
   script: [{ src: '/scripts/BrowserPrint-3.1.250.min.js' }]
 })
 

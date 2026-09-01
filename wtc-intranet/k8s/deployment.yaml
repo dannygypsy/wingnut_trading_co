@@ -1,0 +1,134 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-wtc-intranet
+  namespace: gz
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - wtc.wingnutstables.com
+      secretName: wtc-tls
+  rules:
+    - host: wtc.wingnutstables.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wtc-intranet-service
+                port:
+                  number: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wtc-intranet-service
+  namespace: gz
+spec:
+  type: ClusterIP
+  selector:
+    app: wtc-intranet
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wtc-intranet
+  namespace: gz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wtc-intranet
+  template:
+    metadata:
+      labels:
+        app: wtc-intranet
+    spec:
+      imagePullSecrets:
+        - name: ghcr-login-secret
+      volumes:
+        - name: do-ca
+          configMap:
+            name: do-ca-cert
+      containers:
+        - name: wtc-intranet
+          volumeMounts:
+            - name: do-ca
+              mountPath: /etc/ssl/do
+              readOnly: true
+          image: ghcr.io/dannygypsy/wtc-intranet:3.0.6
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "125m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: wtc-intranet-secrets
+                  key: database-url
+            - name: ALLOWED_EMAILS
+              value: "ixdaniel@mac.com,ixdaniel@me.com,danny@wingnutstables.com"
+            - name: NUXT_SESSION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wtc-intranet-secrets
+                  key: session-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-token
+                  key: token
+            - name: WTC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: wtc-intranet-account
+                  key: username
+            - name: WTC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wtc-intranet-account
+                  key: password
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: wtc-intranet-hpa
+  namespace: gz
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: wtc-intranet
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70

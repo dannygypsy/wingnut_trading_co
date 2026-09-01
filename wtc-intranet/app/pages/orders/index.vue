@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useHead({ title: 'Orders' })
 const startDate = ref('')
 const endDate = ref('')
 const search = ref('')
