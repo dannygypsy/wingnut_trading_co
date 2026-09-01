@@ -6,6 +6,7 @@ export default defineEventHandler((event) => {
     // Allow public routes through
     if (
         url.startsWith('/api/auth') ||
+        url.startsWith('/api/wtc/pos/') ||
         url === '/signin' ||
         url.startsWith('/_nuxt') ||
         url.startsWith('/__nuxt')

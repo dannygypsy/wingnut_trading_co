@@ -7,123 +7,2318 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────
-// CASH FLOW
-// ─────────────────────────────────────────
-
 model CashFlow {
-  id                   String    @id @default(uuid())
-  transaction_date     DateTime  @db.Date
-  type                 String    // "income" | "expense"
-  category             String
-  description          String
-  amount               Decimal   @db.Decimal(10, 2)
-  payment_method       String?
-  vendor               String?
-  notes                String?   @db.Text
-  created_by           String
-  created_at           DateTime  @default(now())
-  related_order_id     String?
-  related_inventory_id String?
-
-  order     Order?     @relation(fields: [related_order_id], references: [id])
+  id                   String                 @id @default(uuid()) @db.VarChar(255)
+  transaction_date     DateTime               @db.DateTime(0)
+  type                 wtc_cash_flow_type
+  category             wtc_cash_flow_category
+  description          String                 @db.VarChar(512)
+  amount               Decimal                @db.Decimal(10, 2)
+  payment_method       String?                @db.VarChar(255)
+  vendor               String?                @db.VarChar(255)
+  receipt_image        Bytes?                 @db.Blob
+  notes                String?                @db.Text
+  created_by           String                 @db.VarChar(255)
+  created_at           DateTime               @default(now()) @db.DateTime(0)
+  related_order_id     String?                @db.VarChar(255)
+  related_inventory_id String?                @db.VarChar(255)
 
   @@map("wtc_cash_flow")
 }
 
-// ─────────────────────────────────────────
-// INVENTORY
-// ─────────────────────────────────────────
-
 model Inventory {
-  id           String    @id @default(uuid())
-  product_id   String?
-  category     String
-  name         String
-  size         String?
-  full_name    String
-  type         String?   // "blank" | "transfer" | "other"
-  cost         Decimal   @db.Decimal(10, 2)
-  retail       Decimal   @db.Decimal(10, 2)
-  purchased_on DateTime  @db.Date
+  id            String             @id @default(uuid()) @db.VarChar(255)
+  product_id    String?            @db.VarChar(36)
+  type          wtc_inventory_type
+  category      String             @db.VarChar(255)
+  name          String             @db.VarChar(255)
+  full_name     String             @db.VarChar(255)
+  size          String?            @db.VarChar(5)
+  cost          Float
+  retail        Float
+  image         Bytes?             @db.Blob
+  purchased_on  DateTime           @db.Date
   num_purchased Int
-  remaining    Int
-  image        String?
-
-  orderItems         OrderItem[]
-  orderCustomizations OrderCustomization[]
+  remaining     Int
 
   @@map("wtc_inventory")
 }
 
 model InventoryCategory {
-  id         Int    @id @default(autoincrement())
-  name       String
-  sort_order Int    @default(0)
-
+  id         Int                  @id @default(autoincrement())
+  name       String?              @db.VarChar(24)
+  sort_order Int?
   placements InventoryPlacement[]
 
   @@map("wtc_inventory_categories")
 }
 
 model InventoryPlacement {
-  id          Int    @id @default(autoincrement())
-  category_id Int
-  name        String
-  sort_order  Int    @default(0)
+  id          Int                @id @default(autoincrement())
+  category_id Int?
+  name        String?            @db.VarChar(255)
+  sort_order  Int?
+  category    InventoryCategory? @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "fk_cat_id")
 
-  category InventoryCategory @relation(fields: [category_id], references: [id])
-
+  @@index([category_id], map: "fk_cat_id")
   @@map("wtc_inventory_placements")
 }
 
-// ─────────────────────────────────────────
-// ORDERS
-// ─────────────────────────────────────────
-
 model Order {
-  id              String    @id @default(uuid())
-  customer        String?
-  created_at      DateTime  @default(now())
-  total           Decimal   @db.Decimal(10, 2)
-  status          String    @default("pending") // "pending" | "completed" | "delivered" | "canceled"
-  payment_method  String?
-  discount_desc   String?
-  discount_percent Decimal? @db.Decimal(5, 2)
-
-  items           OrderItem[]
-  customizations  OrderCustomization[]
-  cashFlow        CashFlow[]
+  id               String   @id @default(uuid()) @db.VarChar(255)
+  customer         String   @db.VarChar(255)
+  salesperson_name String?  @db.VarChar(100)
+  notes            String?  @db.VarChar(512)
+  created_at       DateTime @db.DateTime(0)
+  created_by       String   @db.VarChar(255)
+  total            Float    @default(0)
+  status           String   @db.VarChar(255)
+  discount_desc    String?  @db.VarChar(255)
+  discount_percent Float?
+  payment_method   String   @default("not paid") @db.VarChar(255)
 
   @@map("wtc_orders")
 }
 
 model OrderItem {
-  id           String   @id @default(uuid())
-  order_id     String
-  inventory_id String?
-  name         String
-  retail       Decimal  @db.Decimal(10, 2)
-  quantity     Int      @default(1)
-
-  order        Order      @relation(fields: [order_id], references: [id])
-  inventory    Inventory? @relation(fields: [inventory_id], references: [id])
-  customizations OrderCustomization[]
+  id           String  @id @default(uuid()) @db.VarChar(255)
+  order_id     String  @db.VarChar(255)
+  inventory_id String  @db.VarChar(255)
+  name         String  @db.VarChar(255)
+  retail       Float
+  quantity     Int
+  size         String? @db.VarChar(10)
 
   @@map("wtc_order_items")
 }
 
 model OrderCustomization {
-  id           String   @id @default(uuid())
-  order_id     String
-  item_id      String
-  inventory_id String?
-  name         String
-  retail       Decimal  @db.Decimal(10, 2)
-
-  order     Order      @relation(fields: [order_id], references: [id])
-  item      OrderItem  @relation(fields: [item_id], references: [id])
-  inventory Inventory? @relation(fields: [inventory_id], references: [id])
+  id           String  @id @default(uuid()) @db.VarChar(255)
+  order_id     String  @db.VarChar(255)
+  item_id      String  @db.VarChar(255)
+  position     String  @db.VarChar(255)
+  inventory_id String  @db.VarChar(255)
+  name         String  @db.VarChar(255)
+  retail       Float
+  notes        String? @db.VarChar(512)
 
   @@map("wtc_order_customizations")
+}
+
+model accounts_old {
+  id               Int                      @id @default(autoincrement()) @db.UnsignedInt
+  qr_code          String                   @db.VarChar(40)
+  name             String                   @db.VarChar(80)
+  real_name        String?                  @db.VarChar(128)
+  email            String                   @db.VarChar(80)
+  verified         Boolean                  @default(false)
+  about_me         String?                  @db.LongText
+  blurb            String?                  @db.LongText
+  old_status       accounts_old_old_status
+  is_admin         accounts_old_is_admin    @default(no)
+  status           accounts_old_status      @default(ACTIVE)
+  show_in_search   Int                      @default(1) @db.TinyInt
+  show_calendar    Int                      @default(1) @db.TinyInt
+  show_activity    Int                      @default(1) @db.TinyInt
+  fetlife          String?                  @db.VarChar(128)
+  facebook         String?                  @db.VarChar(256)
+  twitter          String?                  @db.VarChar(256)
+  google_plus      String?                  @db.VarChar(256)
+  login            String?                  @unique(map: "login_index") @db.VarChar(40)
+  password         String                   @db.VarChar(80)
+  password_secure  String?                  @db.VarChar(255)
+  last_login       DateTime?                @db.Timestamp(0)
+  old_guest_of     Int?
+  old_money        Int                      @default(0)
+  old_escape       accounts_old_old_escape  @default(no)
+  notes            String?                  @db.LongText
+  current_group    Int                      @default(0)
+  view_rating      accounts_old_view_rating @default(g)
+  timezone         String                   @default("America/New_York") @db.VarChar(48)
+  login_token      String?                  @db.VarChar(48)
+  reset_token      String?                  @db.VarChar(48)
+  reset_token_time DateTime?                @db.Timestamp(0)
+  verify_token     String?                  @db.VarChar(48)
+  max_images       Int                      @default(25)
+  max_groups       Int                      @default(10)
+}
+
+model bank__transactions {
+  id          Int                     @id @default(autoincrement())
+  type        bank__transactions_type
+  amount      Int
+  description String                  @db.VarChar(128)
+  datetime    DateTime                @default(now()) @db.Timestamp(0)
+  account_id  Int
+}
+
+model cal__event_cost {
+  event_id Int
+  role_id  Int
+  cost     Int @default(0)
+
+  @@id([event_id, role_id])
+}
+
+model cal__event_doc_categories {
+  event_id     Int         @db.UnsignedInt
+  doc_category String      @db.VarChar(255)
+  cal__events  cal__events @relation(fields: [event_id], references: [id], onDelete: Cascade, map: "ev_fk")
+
+  @@id([event_id, doc_category])
+}
+
+model cal__event_forms {
+  primary_id Int @id @default(autoincrement())
+  event_id   Int
+  form_id    Int
+  sortorder  Int
+
+  @@unique([event_id, sortorder], map: "main")
+}
+
+model cal__event_history {
+  id       Int      @id @default(autoincrement())
+  stamp    DateTime @default(now()) @db.Timestamp(0)
+  action   String   @db.VarChar(255)
+  event_id Int
+  actor_id Int
+}
+
+model cal__event_invitations {
+  primary_id  Int      @id @default(autoincrement())
+  event_id    Int
+  account_id  Int
+  invite_time DateTime @default(now()) @db.Timestamp(0)
+
+  @@unique([event_id, account_id], map: "main_index")
+}
+
+model cal__event_notifications {
+  event_id   Int
+  account_id Int
+
+  @@id([event_id, account_id])
+}
+
+model cal__event_registration {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  event_id  Int
+  title     String @db.VarChar(24)
+  text      String @db.Text
+  sortorder Int    @default(0)
+}
+
+model cal__event_registration_forms {
+  event_id  Int
+  form_id   Int
+  sortorder Int
+
+  @@id([event_id, sortorder])
+}
+
+model cal__event_roles {
+  event_id  Int
+  role_id   Int
+  sponsored Int @default(0) @db.TinyInt
+
+  @@id([event_id, role_id, sponsored])
+}
+
+model cal__event_view_attendee_roles {
+  event_id     Int          @db.UnsignedInt
+  role_id      Int          @db.UnsignedInt
+  cal__events  cal__events  @relation(fields: [event_id], references: [id], onDelete: Cascade, map: "fk_cevar_eid")
+  group__roles group__roles @relation(fields: [role_id], references: [id], onDelete: Cascade, map: "fk_cevar_rid")
+
+  @@id([event_id, role_id])
+  @@index([role_id], map: "fk_cevar_rid")
+}
+
+model cal__event_views {
+  event_id    Int
+  viewer_id   Int
+  last_viewed DateTime @default(now()) @db.Timestamp(0)
+  group_id    Int      @default(0)
+
+  @@id([event_id, viewer_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cal__events {
+  id                             Int                              @id @default(autoincrement()) @db.UnsignedInt
+  group_id                       Int
+  creator_id                     Int                              @default(0)
+  name                           String                           @db.VarChar(128)
+  blurb                          String?                          @db.VarChar(256)
+  description                    String?                          @db.Text
+  is_private                     Boolean                          @default(false)
+  metatags                       String?                          @db.Text
+  creation_time                  DateTime                         @default(now()) @db.Timestamp(0)
+  rating                         cal__events_rating               @default(u)
+  rating_locked                  Int                              @default(0) @db.TinyInt
+  all_day                        Int                              @default(0) @db.TinyInt
+  start_time                     DateTime?                        @db.Timestamp(0)
+  end_time                       DateTime?                        @db.Timestamp(0)
+  timezone                       String                           @default("America/New_York") @db.VarChar(48)
+  ticketable                     Int                              @default(1) @db.TinyInt
+  max_tickets                    Int?
+  label                          cal__events_label                @default(rsvp)
+  website                        String?                          @db.VarChar(256)
+  fetlife                        String?                          @db.VarChar(256)
+  facebook                       String?                          @db.VarChar(256)
+  twitter                        String?                          @db.VarChar(256)
+  bluesky                        String?                          @db.VarChar(255)
+  instagram                      String?                          @db.VarChar(255)
+  google_plus                    String?                          @db.VarChar(256)
+  location                       String?                          @db.VarChar(128)
+  venue_id                       Int?
+  addr1                          String?                          @db.VarChar(128)
+  addr2                          String?                          @db.VarChar(128)
+  city                           String?                          @db.VarChar(80)
+  state                          String?                          @db.VarChar(50)
+  zip                            String?                          @db.VarChar(20)
+  country_code                   String?                          @db.VarChar(5)
+  lat                            Float?
+  lon                            Float?
+  bg_color                       String                           @default("#0000aa") @db.VarChar(10)
+  fg_color                       String                           @default("#ffffff") @db.VarChar(20)
+  ticketable_by                  cal__events_ticketable_by        @default(group)
+  viewable_by                    cal__events_viewable_by          @default(all)
+  require_sponsors               Int                              @default(0) @db.TinyInt
+  accept_cash                    Int                              @default(0) @db.TinyInt
+  accept_paypal                  Int                              @default(0) @db.TinyInt
+  price                          Float                            @default(0) @db.Float
+  pay_page_text                  String?                          @db.Text
+  paypal_url                     String?                          @db.Text
+  show_in_search                 Int                              @default(1) @db.TinyInt
+  show_in_community              Int                              @default(1) @db.TinyInt
+  show_attendees                 cal__events_show_attendees       @default(attendees)
+  show_details                   cal__events_show_details         @default(attendees)
+  scan_wristband                 Int                              @default(0) @db.TinyInt
+  require_c19_vaccination        Int                              @default(0) @db.TinyInt
+  mandatory                      Int                              @default(0) @db.TinyInt
+  custom_reg_script              String?                          @db.VarChar(64)
+  photo_id                       Int?
+  show_desc                      cal__events_show_desc?           @default(all)
+  show_news                      cal__events_show_news?           @default(all)
+  show_docs                      cal__events_show_docs?           @default(all)
+  show_time                      cal__events_show_time?           @default(all)
+  show_place                     cal__events_show_place?          @default(attendees)
+  profile_doc_category           String?                          @db.VarChar(255)
+  register_show_payment          Int?                             @default(1) @db.TinyInt
+  register_show_wristband        Int?                             @default(0) @db.TinyInt
+  max_news                       Int?                             @default(100)
+  max_ticket_types               Int?                             @default(30)
+  cal__event_doc_categories      cal__event_doc_categories[]
+  cal__event_view_attendee_roles cal__event_view_attendee_roles[]
+}
+
+model cal__events_shared {
+  primary_id      Int @id @default(autoincrement())
+  event_id        Int
+  shared_group_id Int
+
+  @@unique([event_id, shared_group_id], map: "event_id")
+}
+
+model cal__ticket_type_forms {
+  ticket_type_id    Int
+  form_id           Int
+  sortorder         Int               @default(0)
+  cal__ticket_types cal__ticket_types @relation(fields: [ticket_type_id], references: [id], onDelete: Cascade, map: "fk_cttf_tt")
+
+  @@id([ticket_type_id, form_id])
+}
+
+model cal__ticket_type_roles {
+  ticket_type_id    Int
+  role_id           Int
+  cal__ticket_types cal__ticket_types @relation(fields: [ticket_type_id], references: [id], onDelete: Cascade, map: "fk_cttr_tt")
+
+  @@id([ticket_type_id, role_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cal__ticket_types {
+  id                     Int                                 @id @default(autoincrement())
+  event_id               Int
+  name                   String                              @db.VarChar(255)
+  type                   cal__ticket_types_type              @default(paid)
+  quantity               Int                                 @default(0)
+  price                  Decimal?                            @db.Decimal(10, 2)
+  limited_time           cal__ticket_types_limited_time      @default(no)
+  begin_date             DateTime?                           @db.Timestamp(0)
+  end_date               DateTime?                           @db.Timestamp(0)
+  description            String?                             @db.Text
+  require_sponsors       cal__ticket_types_require_sponsors? @default(no)
+  waiver_form_id         Int?
+  available_to           cal__ticket_types_available_to?     @default(roles)
+  cal__ticket_type_forms cal__ticket_type_forms[]
+  cal__ticket_type_roles cal__ticket_type_roles[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model cal__tickets {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  account_id     Int
+  event_id       Int
+  acquire_date   DateTime  @default(now()) @db.Timestamp(0)
+  paid           Float     @default(0) @db.Float
+  checked_in     Int       @default(0) @db.TinyInt
+  check_in_time  DateTime? @db.DateTime(0)
+  wristband_code String?   @db.VarChar(40)
+  dinner         Int?      @db.TinyInt
+  ticket_type_id Int?
+  payment_type   String?   @db.VarChar(255)
+  note           String?   @db.VarChar(255)
+
+  @@unique([account_id, event_id], map: "user_event")
+}
+
+model card__display {
+  id         Int                    @id @default(autoincrement()) @db.UnsignedInt
+  group_id   Int?
+  event_id   Int?
+  account_id Int?
+  position   card__display_position @default(left)
+  type       String                 @db.VarChar(48)
+  post_id    Int?
+  category   String                 @db.VarChar(255)
+  sortorder  Int
+}
+
+model card__exclusions {
+  primary_id Int    @id @default(autoincrement())
+  card_id    Int
+  exclusion  String @db.VarChar(128)
+
+  @@unique([card_id, exclusion], map: "main")
+}
+
+model com__communities {
+  id     Int                     @id @default(autoincrement()) @db.UnsignedInt
+  name   String                  @db.VarChar(128)
+  rating com__communities_rating @default(u)
+}
+
+model com__community_groups {
+  primary_id   Int @id @default(autoincrement())
+  community_id Int
+  group_id     Int
+
+  @@unique([community_id, group_id], map: "community_id")
+}
+
+model com__event_types {
+  primary_id   Int                     @id @default(autoincrement())
+  id           Int
+  community_id Int
+  name         Int
+  rating       com__event_types_rating @default(u)
+}
+
+model derby__notices_sent {
+  primary_id Int      @id @default(autoincrement())
+  derby_id   Int
+  notice_id  Int
+  sent_on    DateTime @default(now()) @db.Timestamp(0)
+
+  @@unique([derby_id, notice_id, sent_on], map: "derby_id")
+}
+
+model derby__registration {
+  account_id        Int
+  event             Int
+  response          derby__registration_response?
+  status            derby__registration_status          @default(pending)
+  paid              Float                               @default(0)
+  payment_method    derby__registration_payment_method?
+  transaction_id    String?                             @db.VarChar(128)
+  code              String                              @db.VarChar(24)
+  is_staff          derby__registration_is_staff?
+  photos            derby__registration_photos?
+  waiver_sign_date  DateTime?                           @db.Timestamp(0)
+  waiver_scene_name String?                             @db.VarChar(128)
+  waiver_real_name  String?                             @db.VarChar(128)
+  role              derby__registration_role?
+  days              derby__registration_days?
+  sent_to_paypal    derby__registration_sent_to_paypal?
+
+  @@id([account_id, event])
+}
+
+model derby__registration_2013 {
+  id               Int                                      @id @default(autoincrement())
+  name             String                                   @db.VarChar(128)
+  email            String                                   @db.VarChar(128)
+  verified         derby__registration_2013_verified        @default(no)
+  event            Int
+  waiver_sign_date DateTime?                                @db.Timestamp(0)
+  waiver_real_name String?                                  @db.VarChar(128)
+  response         derby__registration_2013_response?
+  prereg           derby__registration_2013_prereg          @default(yes)
+  status           derby__registration_2013_status          @default(pending)
+  paid             Float                                    @default(0)
+  payment_method   derby__registration_2013_payment_method?
+  transaction_id   String?                                  @db.VarChar(128)
+  code             String?                                  @db.VarChar(24)
+  is_staff         derby__registration_2013_is_staff        @default(no)
+  photos           derby__registration_2013_photos?
+  role             derby__registration_2013_role            @default(spectator)
+  days             derby__registration_2013_days            @default(sun)
+  sent_to_paypal   derby__registration_2013_sent_to_paypal?
+}
+
+model doc__comments {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  doc_id      Int
+  author_id   Int
+  time_posted DateTime  @default(now()) @db.Timestamp(0)
+  body        String    @db.LongText
+  last_edited DateTime? @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model doc__documents {
+  id              Int                   @id @default(autoincrement()) @db.UnsignedInt
+  author_id       Int
+  group_id        Int?
+  account_id      Int?
+  title           String?               @db.VarChar(256)
+  dek             String?               @db.Text
+  body            String?               @db.Text
+  category        String?               @db.VarChar(256)
+  rating          doc__documents_rating @default(u)
+  rating_locked   Int                   @default(0) @db.TinyInt
+  visible_to      String?               @db.VarChar(255)
+  edit_time       DateTime              @default(now()) @db.Timestamp(0)
+  comments_closed Boolean               @default(true)
+  sort_order      Int                   @default(0)
+  photo_id        Int?
+}
+
+model doc__likes {
+  primary_id Int @id @default(autoincrement())
+  doc_id     Int
+  account_id Int
+
+  @@unique([doc_id, account_id], map: "main")
+}
+
+model doc__roles {
+  doc_id  Int
+  role_id Int
+
+  @@id([doc_id, role_id])
+}
+
+model escape__fields {
+  category String              @db.VarChar(48)
+  name     String              @db.VarChar(64)
+  code     String              @unique(map: "codes") @db.VarChar(24)
+  hint     String?             @db.VarChar(256)
+  type     escape__fields_type @default(text)
+
+  @@id([category, name])
+}
+
+model escape__guest_info {
+  ticket_id Int
+  name      String @db.VarChar(64)
+  value     String @db.Text
+
+  @@id([ticket_id, name])
+}
+
+model event__derby_info {
+  ticket_id Int                    @id
+  event_id  Int
+  role      event__derby_info_role @default(spectator)
+}
+
+model event__escape_info {
+  ticket_id       Int
+  event_id        Int
+  role            event__escape_info_role @default(guest)
+  snacks          String?                 @db.Text
+  honorific       String?                 @db.Text
+  service_info    String?                 @db.Text
+  bio             String?                 @db.Text
+  medical         String?                 @db.Text
+  physical        String?                 @db.Text
+  mental          String?                 @db.Text
+  hard_limits     String?                 @db.Text
+  soft_limits     String?                 @db.Text
+  exceptions      String?                 @db.Text
+  likes           String                  @db.Text
+  fantasies       String                  @db.Text
+  resort_services String                  @db.Text
+  cooking_skills  String                  @db.Text
+  allergies       String?                 @db.Text
+
+  @@id([ticket_id, event_id])
+}
+
+model event__groups {
+  event_id Int
+  group_id Int
+
+  @@id([event_id, group_id])
+}
+
+model event__hunt_heats {
+  event_id    Int
+  heat        Int
+  account_id  Int
+  captured_by Int?
+  role        event__hunt_heats_role
+
+  @@id([event_id, heat, account_id, role])
+}
+
+model event__hunt_info {
+  ticket_id      Int                             @id
+  event_id       Int
+  hunter         event__hunt_info_hunter         @default(no)
+  prey           event__hunt_info_prey           @default(no)
+  has_gun        event__hunt_info_has_gun        @default(no)
+  has_mask       event__hunt_info_has_mask       @default(no)
+  bounty         String?                         @db.LongText
+  restrictions   String?                         @db.LongText
+  jersey         Int?
+  multiple_heats event__hunt_info_multiple_heats @default(no)
+  heat_requested Int?
+}
+
+model event__tickets {
+  id               Int                            @id @default(autoincrement()) @db.UnsignedInt
+  qr_code          String?                        @db.VarChar(40)
+  account_id       Int
+  event_id         Int
+  checked_in       event__tickets_checked_in      @default(no)
+  paid             Float                          @default(0)
+  payment_method   event__tickets_payment_method?
+  transaction_id   String?                        @db.VarChar(128)
+  photos           event__tickets_photos          @default(no)
+  waiver_sign_date DateTime?                      @db.Timestamp(0)
+  waiver_real_name String?                        @db.VarChar(128)
+  swag_flag        Int                            @default(0)
+}
+
+model events {
+  id              Int                @id @default(autoincrement()) @db.UnsignedInt
+  event_name      String             @db.VarChar(80)
+  ad              String?            @db.VarChar(256)
+  donation        Int                @default(10)
+  graphic         String?            @db.VarChar(128)
+  description     String             @db.LongText
+  event_type      events_event_type?
+  ticketable      events_ticketable  @default(no)
+  event_date      DateTime           @db.Date
+  event_time      DateTime           @db.Time(0)
+  view_script     String             @db.VarChar(80)
+  waiver_id       Int?
+  ticketbg        String?            @default("") @db.VarChar(128)
+  wristband_color String             @default("BLUE") @db.VarChar(30)
+  no_photo_color  String             @default("PURPLE") @db.VarChar(30)
+  paired_event    Int?
+}
+
+model fad__action_item_comments {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  action_id Int
+  author_id Int
+  body      String?  @db.Text
+  stamp     DateTime @default(now()) @db.Timestamp(0)
+}
+
+model fad__action_item_views {
+  action_item_id Int
+  account_id     Int
+  last_viewed    DateTime @default(now()) @db.Timestamp(0)
+
+  @@id([action_item_id, account_id])
+}
+
+model fad__action_items {
+  id        Int                      @id @default(autoincrement()) @db.UnsignedInt
+  group_id  Int
+  title     String                   @db.VarChar(256)
+  rating    fad__action_items_rating @default(u)
+  body      String?                  @db.Text
+  author_id Int
+  complete  Int                      @default(0) @db.TinyInt
+  stamp     DateTime                 @default(now()) @db.Timestamp(0)
+}
+
+model fad__fantasy_note_comments {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  note_id   Int
+  author_id Int
+  body      String?  @db.Text
+  stamp     DateTime @default(now()) @db.Timestamp(0)
+  anonymous Int      @default(0) @db.TinyInt
+}
+
+model fad__fantasy_notes {
+  id        Int                       @id @default(autoincrement()) @db.UnsignedInt
+  owner_id  Int
+  author_id Int
+  group_id  Int
+  rating    fad__fantasy_notes_rating @default(u)
+  body      String?                   @db.Text
+  stamp     DateTime                  @default(now()) @db.Timestamp(0)
+  encrypted Boolean                   @default(false)
+  anonymous Boolean                   @default(false)
+}
+
+model fad__fantasy_views {
+  primary_id  Int      @id @default(autoincrement())
+  box_id      Int
+  account_id  Int
+  last_viewed DateTime @default(now()) @db.Timestamp(0)
+
+  @@unique([box_id, account_id], map: "box_id")
+}
+
+model fad__prefs {
+  account_id Int
+  pref_name  String @db.VarChar(50)
+  pref_value String @db.VarChar(80)
+
+  @@id([account_id, pref_name])
+}
+
+model fad__retreat_days {
+  day  DateTime @id @db.Date
+  desc String?  @db.VarChar(255)
+}
+
+model flag__reports {
+  id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  reporter_id  Int
+  content_type String   @db.VarChar(20)
+  content_id   Int
+  reason       String   @db.VarChar(255)
+  details      String   @db.Text
+  stamp        DateTime @default(now()) @db.Timestamp(0)
+  url          String   @default("") @db.VarChar(255)
+}
+
+model form__field_elements {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  form_id   Int
+  field_id  Int
+  name      String @db.VarChar(128)
+  sortorder Int
+}
+
+model form__fields {
+  id        Int               @id @default(autoincrement()) @db.UnsignedInt
+  form_id   Int
+  name      String            @db.VarChar(200)
+  type      form__fields_type @default(text)
+  sortorder Int
+  required  Int               @default(0) @db.TinyInt
+  textblock String?           @db.Text
+}
+
+model form__forms {
+  id           Int              @id @default(autoincrement()) @db.UnsignedInt
+  group_id     Int
+  name         String           @db.VarChar(200)
+  instructions String?          @db.LongText
+  type         form__forms_type @default(waiver)
+}
+
+model form__result_fields {
+  id        Int    @id @default(autoincrement())
+  result_id Int
+  name      String @db.VarChar(255)
+  value     String @db.Text
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model form__results {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int
+  event_id   Int?
+  form_id    Int
+  field_id   Int?
+  name       String?  @db.VarChar(255)
+  value      String?  @db.Text
+  stamp      DateTime @default(now()) @db.Timestamp(0)
+}
+
+model groopzone__changelog {
+  id      Int      @id @default(autoincrement())
+  release String   @db.VarChar(40)
+  changes String   @db.VarChar(1024)
+  stamp   DateTime @default(now()) @db.Timestamp(0)
+}
+
+model groopzone__issues {
+  id               Int                      @id @default(autoincrement()) @db.UnsignedInt
+  submitter_id     Int
+  type             groopzone__issues_type   @default(bug)
+  submit_stamp     DateTime                 @default(now()) @db.Timestamp(0)
+  summary          String                   @db.VarChar(255)
+  body             String                   @db.Text
+  reported_version String                   @db.VarChar(20)
+  status           groopzone__issues_status @default(new)
+  priority         Int                      @default(0)
+}
+
+model groopzone__system {
+  id      Int    @id @default(autoincrement())
+  version String @db.VarChar(20)
+  debug   Int    @default(0) @db.TinyInt
+}
+
+model groopzone__versions {
+  primary_id    Int                              @id @default(autoincrement())
+  version_major Int
+  version_minor Int
+  version_type  groopzone__versions_version_type @default(stable)
+  notes         String                           @db.Text
+  release_date  DateTime                         @default(now()) @db.Timestamp(0)
+
+  @@unique([version_major, version_minor, version_type], map: "main")
+}
+
+model group__account_join_dates {
+  account_id     Int
+  group_id       Int            @db.UnsignedInt
+  joined_on      DateTime?      @default(now()) @db.Timestamp(0)
+  user__accounts user__accounts @relation(fields: [account_id], references: [id], onDelete: Cascade, map: "acc_fk")
+  group__groups  group__groups  @relation(fields: [group_id], references: [id], onDelete: Cascade, map: "grp_fk")
+
+  @@id([account_id, group_id])
+  @@index([group_id], map: "grp_fk")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model group__applications {
+  id              Int                        @id @default(autoincrement()) @db.UnsignedInt
+  account_id      Int
+  stamp           DateTime                   @default(now()) @db.Timestamp(0)
+  message         String?                    @db.LongText
+  group_id        Int
+  form_results_id Int?
+  status          group__applications_status @default(pending)
+  actor_id        Int?
+}
+
+model group__banned {
+  primary_id Int       @id @default(autoincrement())
+  group_id   Int
+  account_id Int
+  ban_date   DateTime? @default(now()) @db.Timestamp(0)
+
+  @@unique([group_id, account_id], map: "main")
+}
+
+model group__doc_categories {
+  group_id      Int           @db.UnsignedInt
+  doc_category  String        @db.VarChar(255)
+  group__groups group__groups @relation(fields: [group_id], references: [id], onDelete: Cascade, map: "grp_id_fk")
+
+  @@id([group_id, doc_category])
+}
+
+model group__group_communities {
+  group_id     Int
+  community_id Int
+
+  @@id([group_id, community_id])
+}
+
+model group__groups {
+  id                        Int                         @id @default(autoincrement()) @db.UnsignedInt
+  name                      String                      @db.VarChar(128)
+  short_name                String?                     @db.VarChar(24)
+  metatags                  String?                     @db.Text
+  status                    group__groups_status        @default(active)
+  blurb                     String?                     @db.VarChar(256)
+  description               String?                     @db.Text
+  website                   String?                     @db.VarChar(256)
+  fetlife                   String?                     @db.VarChar(128)
+  facebook                  String?                     @db.VarChar(256)
+  twitter                   String?                     @db.VarChar(256)
+  bluesky                   String?                     @db.VarChar(255)
+  discord                   String?                     @db.VarChar(255)
+  google_plus               String?                     @db.VarChar(256)
+  default_role              Int?
+  join_criteria             group__groups_join_criteria @default(open)
+  apply_instructions        String?                     @db.Text
+  rating                    group__groups_rating        @default(u)
+  rating_locked             Boolean                     @default(false)
+  max_images                Int                         @default(25)
+  max_documents             Int                         @default(50)
+  max_forms                 Int                         @default(30)
+  max_events                Int                         @default(200)
+  max_news                  Int?                        @default(200)
+  max_venues                Int?                        @default(50)
+  viewable_by               group__groups_viewable_by   @default(all)
+  show_in_search            Int                         @default(1) @db.TinyInt
+  fcm_api_key               String?                     @db.VarChar(255)
+  instagram                 String?                     @db.VarChar(255)
+  show_events               Int                         @default(1) @db.TinyInt
+  show_desc                 Int                         @default(1) @db.TinyInt
+  show_news                 Int                         @default(1) @db.TinyInt
+  show_members              Int                         @default(1) @db.TinyInt
+  show_photos               Int                         @default(1) @db.TinyInt
+  show_docs                 Int                         @default(1) @db.TinyInt
+  profile_photo_album       String?                     @db.VarChar(255)
+  profile_doc_category      String?                     @db.VarChar(255)
+  avatar_photo_id           Int?
+  cover_photo_id            Int?
+  avatar_shape              group__groups_avatar_shape? @default(circle)
+  application_form_id       Int?
+  creator_id                Int                         @default(2)
+  group__account_join_dates group__account_join_dates[]
+  group__doc_categories     group__doc_categories[]
+  group__notifications      group__notifications[]
+}
+
+model group__history {
+  id       Int      @id @default(autoincrement()) @db.UnsignedInt
+  stamp    DateTime @default(now()) @db.Timestamp(0)
+  action   String   @db.VarChar(255)
+  group_id Int
+  actor_id Int
+}
+
+model group__invites {
+  id        Int      @id @default(autoincrement())
+  group_id  Int
+  person_id Int
+  stamp     DateTime @default(now()) @db.Timestamp(0)
+}
+
+model group__motd {
+  primary_id              Int       @id @default(autoincrement())
+  group_id                Int       @unique(map: "group_id")
+  title                   String    @db.VarChar(256)
+  subtitle                String?   @db.VarChar(256)
+  countdown_to            DateTime? @db.Timestamp(0)
+  post_countdown_title    String?   @db.VarChar(256)
+  post_countdown_subtitle String?   @db.VarChar(256)
+}
+
+model group__notification_types {
+  id            Int     @id @default(autoincrement())
+  type          String? @db.VarChar(40)
+  name          String? @db.VarChar(255)
+  desc          String? @db.VarChar(255)
+  section       String? @db.VarChar(255)
+  permission_id Int?
+  sortorder     Int?    @default(1000)
+}
+
+model group__notifications {
+  group_id       Int            @db.UnsignedInt
+  account_id     Int
+  type           String         @db.VarChar(40)
+  enabled        Boolean?       @default(true)
+  user__accounts user__accounts @relation(fields: [account_id], references: [id], onDelete: Cascade, map: "gn_ac_fk")
+  group__groups  group__groups  @relation(fields: [group_id], references: [id], onDelete: Cascade, map: "gn_grp_fk")
+
+  @@id([group_id, account_id, type])
+  @@index([account_id], map: "gn_ac_fk")
+}
+
+model group__permissions {
+  id               Int                       @id @default(autoincrement()) @db.UnsignedInt
+  name             String                    @db.VarChar(64)
+  category         String                    @default("General") @db.VarChar(48)
+  tooltip          String                    @db.VarChar(256)
+  sort_order       Int
+  owner_default    Boolean                   @default(true)
+  guest_default    Boolean                   @default(false)
+  outsider_default Int                       @default(0) @db.TinyInt
+  status           group__permissions_status @default(active)
+}
+
+model group__roles {
+  id                             Int                              @id @default(autoincrement()) @db.UnsignedInt
+  group_id                       Int
+  name                           String                           @db.VarChar(64)
+  description                    String?                          @db.VarChar(256)
+  allow_sponsors                 group__roles_allow_sponsors      @default(no)
+  count_tickets                  group__roles_count_tickets       @default(yes)
+  fastlane                       group__roles_fastlane            @default(no)
+  max_sponsors                   Int?
+  sponsor_header                 String?                          @db.Text
+  sort_order                     Int
+  public_role                    Boolean                          @default(false)
+  cal__event_view_attendee_roles cal__event_view_attendee_roles[]
+}
+
+model group__roles_permissions {
+  id            Int @id @default(autoincrement())
+  role_id       Int
+  permission_id Int
+
+  @@unique([id, role_id], map: "sec")
+}
+
+model group__sponsors {
+  primary_id   Int      @id @default(autoincrement())
+  group_id     Int
+  sponsor_id   Int
+  sponsored_id Int
+  stamp        DateTime @default(now()) @db.Timestamp(0)
+
+  @@unique([group_id, sponsor_id, sponsored_id], map: "main")
+}
+
+model group__venues {
+  id           Int      @id @default(autoincrement())
+  group_id     Int
+  name         String   @db.VarChar(255)
+  description  String?  @db.Text
+  creator_id   Int
+  created_on   DateTime @default(now()) @db.Timestamp(0)
+  address1     String?  @db.VarChar(255)
+  address2     String?  @db.VarChar(255)
+  city         String?  @db.VarChar(80)
+  state        String?  @db.VarChar(50)
+  zip          String?  @db.VarChar(20)
+  country_code String?  @db.VarChar(255)
+  lat          Float?
+  lon          Float?
+}
+
+model group__wall {
+  id        Int       @id @default(autoincrement()) @db.UnsignedInt
+  group_id  Int
+  author_id Int
+  body      String    @db.Text
+  stamp     DateTime  @default(now()) @db.Timestamp(0)
+  edited_on DateTime? @db.Timestamp(0)
+
+  @@index([group_id, stamp], map: "latest_index")
+}
+
+model group__wall_views {
+  group_id    Int
+  account_id  Int
+  last_viewed DateTime @default(now()) @db.Timestamp(0)
+
+  @@id([group_id, account_id])
+}
+
+model help__faqs {
+  id       Int    @id @default(autoincrement()) @db.UnsignedInt
+  question String @db.VarChar(256)
+  answer   String @db.MediumText
+  category String @db.VarChar(128)
+  views    Int    @default(0)
+}
+
+model hunt2__position {
+  primary_id Int @id @default(autoincrement())
+  pos        Int @default(0)
+}
+
+model hunt2__registration {
+  account_id        Int
+  event             Int
+  response          hunt2__registration_response?
+  status            hunt2__registration_status
+  paid              Float                               @default(0)
+  payment_method    hunt2__registration_payment_method?
+  transaction_id    String?                             @db.VarChar(128)
+  code              String                              @db.VarChar(24)
+  is_staff          hunt2__registration_is_staff        @default(no)
+  photos            hunt2__registration_photos?
+  waiver_sign_date  DateTime?                           @db.Timestamp(0)
+  waiver_scene_name String?                             @db.VarChar(128)
+  waiver_real_name  String?                             @db.VarChar(128)
+  hunter            hunt2__registration_hunter          @default(no)
+  prey              hunt2__registration_prey            @default(no)
+  has_gun           hunt2__registration_has_gun         @default(no)
+  has_mask          hunt2__registration_has_mask        @default(no)
+  bounty            String?                             @db.LongText
+  restrictions      String?                             @db.LongText
+  jersey            Int?
+  target1           String?                             @db.VarChar(64)
+  target2           String?                             @db.VarChar(64)
+  target3           String?                             @db.VarChar(64)
+  multiple_heats    hunt2__registration_multiple_heats  @default(no)
+  sent_to_paypal    hunt2__registration_sent_to_paypal?
+  heat_requested    Int
+
+  @@id([account_id, event])
+}
+
+model hunt__bets {
+  id         Int @id @default(autoincrement()) @db.UnsignedInt
+  event      Int
+  account_id Int
+  heat       Int
+  first_prey Int
+  fp_min     Int
+  last_prey  Int
+  lp_min     Int
+  score      Int @default(0)
+}
+
+model hunt__captures {
+  id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  event        Int
+  heat         Int?
+  hunter_id    Int
+  prey_id      Int
+  timestamp    DateTime @default(now()) @db.Timestamp(0)
+  elapsed_time Int?
+}
+
+model hunt__heat_players {
+  event     Int
+  heat      Int
+  player_id Int
+  role      hunt__heat_players_role
+
+  @@id([heat, player_id, event])
+}
+
+model hunt__heats {
+  event      Int
+  heat       Int
+  state      hunt__heats_state
+  begin_time DateTime?         @db.Timestamp(0)
+  end_time   DateTime?         @db.Timestamp(0)
+
+  @@id([event, heat])
+}
+
+model hunt__registration {
+  account_id     Int
+  event          Int
+  response       hunt__registration_response?
+  status         hunt__registration_status    @default(pending)
+  paid           Int                          @default(0)
+  role           String?                      @db.VarChar(255)
+  is_staff       String                       @default("no") @db.VarChar(255)
+  gear           String?                      @db.VarChar(255)
+  mask           String?                      @db.VarChar(255)
+  multiple_heats String?                      @db.VarChar(255)
+  on_post        String                       @default("yes") @db.VarChar(255)
+  dinner         String?                      @db.VarChar(255)
+  party          String?                      @db.VarChar(255)
+  media_slut     String?                      @db.VarChar(255)
+  photos         String?                      @db.VarChar(255)
+  bounty         String?                      @db.LongText
+  restrictions   String?                      @db.LongText
+  code           String                       @db.VarChar(24)
+  heat_requested Int?
+  heat           Int?
+  jersey         Int?
+  notes          String?                      @db.LongText
+  staff_notes    String?                      @db.LongText
+
+  @@id([account_id, event])
+}
+
+model issue__issues {
+  id            Int                   @id @default(autoincrement())
+  summary       String?               @db.VarChar(255)
+  description   String?               @db.Text
+  type          issue__issues_type?   @default(bug)
+  device        String?               @db.VarChar(255)
+  browser       String?               @db.VarChar(255)
+  reporter_id   Int?
+  status        issue__issues_status? @default(new)
+  date_reported DateTime?             @default(now()) @db.Timestamp(0)
+  image         Bytes?                @db.MediumBlob
+}
+
+model mail__contents {
+  id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  sender_id    Int
+  reply_to     Int?
+  subject      String   @db.VarChar(256)
+  body         String?  @db.Text
+  sent_on      DateTime @default(now()) @db.Timestamp(0)
+  addressed_to String?  @db.VarChar(255)
+  to_accounts  Json?
+}
+
+model mail__messages {
+  id           Int                   @id @default(autoincrement())
+  contents_id  Int
+  mail_to      Int
+  replied_to   Int?
+  status       mail__messages_status @default(NEW)
+  received_on  DateTime              @default(now()) @db.Timestamp(0)
+  replied_on   DateTime?             @db.Timestamp(0)
+  addressed_to String?               @db.VarChar(512)
+}
+
+model news__articles {
+  id                 Int                       @id @default(autoincrement())
+  author_id          Int
+  group_id           Int?
+  event_id           Int?
+  title              String                    @db.VarChar(256)
+  dek                String?                   @db.Text
+  body               String                    @db.Text
+  visible_to         news__articles_visible_to @default(all)
+  live_time          DateTime?                 @db.Timestamp(0)
+  archive_time       DateTime?                 @db.Timestamp(0)
+  edit_time          DateTime                  @default(now()) @db.Timestamp(0)
+  notify             Int                       @default(0) @db.TinyInt
+  photo_id           Int?
+  notifications_sent Int?                      @default(0) @db.TinyInt
+  priority           Int                       @default(5)
+  gone_live          Int                       @default(0)
+}
+
+model news__reads {
+  article_id Int
+  account_id Int
+  read_time  DateTime @default(now()) @db.Timestamp(0)
+
+  @@id([article_id, account_id])
+  @@index([account_id], map: "fk_nr_acc")
+}
+
+model news__roles {
+  primary_id Int @id @default(autoincrement())
+  article_id Int
+  role_id    Int
+}
+
+model news__views {
+  article_id  Int
+  viewer_id   Int
+  last_viewed DateTime @default(now()) @db.Timestamp(0)
+
+  @@id([article_id, viewer_id])
+}
+
+model notification__email_queue {
+  id         Int    @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int
+  message    String @db.VarChar(512)
+  subject    String @db.VarChar(255)
+  action     String @db.Text
+}
+
+model notification__log {
+  id    Int      @id @default(autoincrement()) @db.UnsignedInt
+  stamp DateTime @default(now()) @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model notification__notifications {
+  id         Int                                @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int
+  status     notification__notifications_status @default(new)
+  stamp      DateTime                           @default(now()) @db.Timestamp(0)
+  icon       String?                            @db.VarChar(512)
+  text       String                             @db.VarChar(512)
+  priority   Int                                @default(5)
+}
+
+model payment__types {
+  id        Int    @id @default(autoincrement())
+  name      String @db.VarChar(255)
+  code      String @db.VarChar(255)
+  sortorder Int    @default(0)
+}
+
+model photo__album_views {
+  owner_account Int      @default(0)
+  owner_group   Int      @default(0)
+  album         String   @db.VarChar(80)
+  viewer_id     Int
+  last_viewed   DateTime @default(now()) @db.Timestamp(0)
+
+  @@id([owner_account, owner_group, viewer_id])
+}
+
+model photo__comments {
+  id            Int       @id @default(autoincrement())
+  photo_data_id Int
+  comment       String    @db.Text
+  author_id     Int
+  stamp         DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model photo__data {
+  id            Int                @id @default(autoincrement()) @db.UnsignedInt
+  image         Bytes              @db.MediumBlob
+  owner_account Int?
+  owner_group   Int?
+  caption       String?            @db.VarChar(255)
+  rating        photo__data_rating @default(u)
+  uploaded_by   Int?
+  upload_date   DateTime           @default(now()) @db.Timestamp(0)
+  album         String?            @db.VarChar(80)
+  sort_order    Int                @default(0)
+}
+
+model photo__images {
+  id         Int                 @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int?
+  group_id   Int?
+  post_id    Int?
+  event_id   Int?
+  news_id    Int?
+  doc_id     Int?
+  data_id    Int
+  meta       String?             @db.VarChar(24)
+  sort_order Int
+  shape      photo__images_shape @default(square)
+}
+
+model sponsors {
+  primary_id Int @id @default(autoincrement())
+  account_id Int
+  sponsor_id Int
+
+  @@unique([account_id, sponsor_id], map: "combo")
+}
+
+model survey__info {
+  id    Int    @id @default(autoincrement())
+  event Int
+  name  String @db.VarChar(200)
+}
+
+model survey__results {
+  account_id Int
+  survey_id  Int
+  question   String @db.VarChar(256)
+  answer     String @db.LongText
+
+  @@id([account_id, survey_id, question])
+}
+
+model user__accounts {
+  id                        Int                                  @id @default(autoincrement())
+  qr_code                   String                               @db.VarChar(40)
+  name                      String                               @db.VarChar(80)
+  real_name                 String?                              @db.VarChar(128)
+  email                     String                               @unique(map: "uniq_email") @db.VarChar(128)
+  verified                  Int                                  @default(0) @db.TinyInt
+  c19_vaccinated            Int                                  @default(0) @db.TinyInt
+  about_me                  String?                              @db.Text
+  blurb                     String?                              @db.MediumText
+  is_admin                  user__accounts_is_admin              @default(no)
+  status                    user__accounts_status                @default(ACTIVE)
+  show_in_search            Int                                  @default(1) @db.TinyInt
+  show_calendar             Int                                  @default(1) @db.TinyInt
+  show_activity             Int                                  @default(1) @db.TinyInt
+  fetlife                   String?                              @db.VarChar(128)
+  facebook                  String?                              @db.VarChar(256)
+  twitter                   String?                              @db.VarChar(256)
+  bluesky                   String?                              @db.VarChar(255)
+  google_plus               String?                              @db.VarChar(256)
+  instagram                 String?                              @db.VarChar(256)
+  password_secure           String?                              @db.VarChar(255)
+  last_login                DateTime?                            @db.Timestamp(0)
+  last_notification         DateTime?                            @db.Timestamp(0)
+  notes                     String?                              @db.MediumText
+  view_rating               user__accounts_view_rating           @default(g)
+  timezone                  String                               @default("America/New_York") @db.VarChar(48)
+  login_token               String?                              @db.VarChar(48)
+  app_token                 String?                              @db.VarChar(48)
+  reset_token               String?                              @db.VarChar(48)
+  reset_token_time          DateTime?                            @db.Timestamp(0)
+  verify_token              String?                              @db.VarChar(48)
+  max_images                Int                                  @default(25)
+  max_groups                Int                                  @default(10)
+  max_documents             Int                                  @default(50)
+  notify_by_email           Int                                  @default(1) @db.TinyInt
+  notify_new_mail           Int                                  @default(1)
+  notify_my_wall            Int                                  @default(0)
+  view_format               user__accounts_view_format           @default(cards)
+  last_login_via            user__accounts_last_login_via        @default(unknown)
+  fcm_token                 String?                              @db.VarChar(255)
+  show_events               Boolean                              @default(true)
+  show_groops               Boolean                              @default(true)
+  show_photos               Boolean                              @default(true)
+  show_docs                 Boolean                              @default(true)
+  show_about_me             Boolean                              @default(true)
+  profile_photo_album       String?                              @db.VarChar(255)
+  profile_doc_category      String?                              @db.VarChar(255)
+  avatar_photo_id           Int?
+  cover_photo_id            Int?
+  avatar_shape              user__accounts_avatar_shape?         @default(circle)
+  events_privacy            user__accounts_events_privacy        @default(public)
+  groups_privacy            user__accounts_groups_privacy        @default(public)
+  docs_privacy              user__accounts_docs_privacy          @default(public)
+  photos_privacy            user__accounts_photos_privacy        @default(public)
+  notify_email_details      user__accounts_notify_email_details? @default(none)
+  first_login               Int?                                 @default(0) @db.TinyInt
+  apple_user_id             String?                              @db.VarChar(255)
+  verification_sent_time    DateTime?                            @db.DateTime(0)
+  created_on                DateTime?                            @default(now()) @db.Timestamp(0)
+  group__account_join_dates group__account_join_dates[]
+  group__notifications      group__notifications[]
+  user__doc_categories      user__doc_categories[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user__accounts_groups {
+  account_id  Int
+  group_id    Int
+  role_id     Int
+  status      user__accounts_groups_status @default(ok)
+  member_date DateTime                     @default(now()) @db.Timestamp(0)
+
+  @@id([account_id, group_id, role_id])
+}
+
+model user__apple_ids {
+  primary_id Int    @id @default(autoincrement())
+  user_id    Int
+  apple_id   String @db.VarChar(64)
+  app        String @db.VarChar(128)
+
+  @@unique([user_id, apple_id], map: "main")
+}
+
+model user__debug {
+  id    Int    @id @default(autoincrement())
+  debug String @db.Text
+}
+
+model user__doc_categories {
+  account_id     Int
+  doc_category   String         @db.VarChar(255)
+  user__accounts user__accounts @relation(fields: [account_id], references: [id], onDelete: Cascade, map: "ac_fk")
+
+  @@id([account_id, doc_category])
+}
+
+model user__event_follow {
+  primary_id Int @id @default(autoincrement())
+  account_id Int
+  event_id   Int
+
+  @@unique([account_id, event_id], map: "main")
+}
+
+model user__flags {
+  account_id Int
+  flag       String @db.VarChar(40)
+
+  @@id([account_id, flag])
+}
+
+model user__group_follow {
+  primary_id Int @id @default(autoincrement())
+  account_id Int
+  group_id   Int
+
+  @@unique([account_id, group_id], map: "main")
+}
+
+model user__history {
+  id       Int      @id @default(autoincrement()) @db.UnsignedInt
+  stamp    DateTime @default(now()) @db.Timestamp(0)
+  action   String   @db.VarChar(255)
+  user_id  Int
+  actor_id Int
+
+  @@index([user_id], map: "user search")
+}
+
+model user__user_follow {
+  account_id Int
+  user_id    Int
+
+  @@id([account_id, user_id])
+}
+
+model user__wall {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int
+  author_id  Int
+  body       String?  @db.VarChar(512)
+  stamp      DateTime @default(now()) @db.Timestamp(0)
+}
+
+model user__web_notifications {
+  id         Int    @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int
+  endpoint   String @db.VarChar(512)
+  p256dh     String @db.VarChar(256)
+  auth       String @db.VarChar(256)
+}
+
+model village__bids {
+  primary_id Int @id @default(autoincrement())
+  event      Int
+  account_id Int
+  amount     Int
+
+  @@unique([event, account_id], map: "event")
+}
+
+model w3f__registration {
+  account_id       Int
+  event            Int
+  response         w3f__registration_response?
+  status           w3f__registration_status           @default(pending)
+  paid             Float                              @default(0)
+  payment_method   w3f__registration_payment_method?
+  transaction_id   String?                            @db.VarChar(128)
+  code             String?                            @db.VarChar(24)
+  wrestle          w3f__registration_wrestle?
+  opponent         String?                            @db.VarChar(256)
+  is_staff         w3f__registration_is_staff         @default(no)
+  dinner           w3f__registration_dinner?
+  photos           w3f__registration_photos?
+  media_slut       w3f__registration_media_slut?
+  perform          w3f__registration_perform?
+  perform_info     String?                            @db.LongText
+  biz              w3f__registration_biz?
+  biz_info         String?                            @db.LongText
+  auction          w3f__registration_auction?
+  auction_info     String?                            @db.LongText
+  job_bartend      w3f__registration_job_bartend?
+  job_waiter       w3f__registration_job_waiter?
+  job_trash        w3f__registration_job_trash?
+  job_dealer       w3f__registration_job_dealer?
+  job_pool         w3f__registration_job_pool?
+  job_wrestle_mgr  w3f__registration_job_wrestle_mgr?
+  job_tattoo       w3f__registration_job_tattoo?
+  job_chef         w3f__registration_job_chef?
+  waiver_real_name String?                            @db.VarChar(128)
+  waiver_sign_date DateTime?                          @db.Timestamp(0)
+
+  @@id([account_id, event])
+}
+
+model waiver_signatures {
+  account_id Int
+  event_id   Int
+  name       String   @db.VarChar(256)
+  signature  String   @db.LongText
+  stamp      DateTime @default(now()) @db.Timestamp(0)
+
+  @@id([account_id, event_id])
+}
+
+model waivers {
+  id          Int     @id @default(autoincrement()) @db.UnsignedInt
+  description String? @db.VarChar(128)
+  body        String  @db.LongText
+}
+
+model wingnut__hunt_attendee_heats {
+  primary_id   Int                               @id @default(autoincrement())
+  account_id   Int
+  heat_id      Int
+  role         wingnut__hunt_attendee_heats_role
+  captured_by  Int?
+  elapsed_time Int?
+
+  @@unique([account_id, heat_id, role], map: "mainindex")
+}
+
+model wingnut__hunt_attendees {
+  primary_id    Int @id @default(autoincrement())
+  account_id    Int
+  event_id      Int
+  checked_in    Int @default(0) @db.TinyInt
+  prey          Int @default(0) @db.TinyInt
+  hunter        Int @default(0) @db.TinyInt
+  mask          Int @default(0) @db.TinyInt
+  gun           Int @default(0) @db.TinyInt
+  jersey_number Int @default(0)
+
+  @@unique([account_id, event_id], map: "account_id")
+}
+
+model wingnut__hunt_heats {
+  id             Int                        @id @default(autoincrement()) @db.UnsignedInt
+  event_id       Int
+  status         wingnut__hunt_heats_status @default(pending)
+  started_at     DateTime?                  @db.Timestamp(0)
+  special_bounty Int?
+}
+
+enum bank__transactions_type {
+  deposit
+  withdrawal
+}
+
+enum com__communities_rating {
+  g
+  m
+  a
+  u
+}
+
+enum derby__registration_response {
+  yes
+  maybe
+  no
+}
+
+enum event__derby_info_role {
+  pony
+  trainer
+  spectator
+}
+
+enum event__escape_info_role {
+  guest
+  servant
+}
+
+enum event__hunt_info_hunter {
+  yes
+  no
+}
+
+enum groopzone__issues_type {
+  bug
+  enhancement
+  help
+}
+
+enum hunt2__registration_response {
+  yes
+  maybe
+  no
+}
+
+enum hunt__heats_state {
+  ready
+  running
+  done
+}
+
+enum hunt__registration_response {
+  yes
+  no
+  probably
+  maybe
+  probably_not
+}
+
+enum notification__notifications_status {
+  new
+  notified
+  seen
+}
+
+enum w3f__registration_response {
+  yes
+  maybe
+  no
+}
+
+enum wingnut__hunt_heats_status {
+  pending
+  running
+  done
+}
+
+enum wtc_cash_flow_type {
+  income
+  expense
+}
+
+enum wtc_inventory_type {
+  blank
+  transfer
+  other
+  demo
+}
+
+enum cal__ticket_types_type {
+  paid
+  free
+  donation
+}
+
+enum derby__registration_status {
+  pending
+  pre_paid   @map("pre-paid")
+  checked_in
+}
+
+enum derby__registration_2013_verified {
+  yes
+  no
+}
+
+enum event__hunt_info_prey {
+  yes
+  no
+}
+
+enum fad__action_items_rating {
+  g
+  m
+  a
+  u
+}
+
+enum form__fields_type {
+  text
+  textarea
+  textblock
+  radio_group
+  check_group
+  select_one
+  select_many
+  hr
+  verify
+}
+
+enum groopzone__versions_version_type {
+  stable
+  alpha
+  beta
+}
+
+enum hunt2__registration_status {
+  pending
+  pre_paid   @map("pre-paid")
+  checked_in
+}
+
+enum hunt__heat_players_role {
+  hunter
+  prey
+}
+
+enum hunt__registration_status {
+  pending
+  checked_in
+}
+
+enum issue__issues_type {
+  bug
+  request
+  help
+}
+
+enum user__accounts_groups_status {
+  ok
+  banned
+}
+
+enum w3f__registration_status {
+  pending
+  pre_paid   @map("pre-paid")
+  checked_in
+}
+
+enum wingnut__hunt_attendee_heats_role {
+  prey
+  hunter
+  captured
+}
+
+enum wtc_cash_flow_category {
+  inventory
+  equipment
+  capex
+  sales
+  other_income
+  operating_expense
+  supplies
+  marketing
+  fees
+  refund
+}
+
+enum card__display_position {
+  left
+  right
+}
+
+enum com__event_types_rating {
+  g
+  m
+  a
+  u
+}
+
+enum escape__fields_type {
+  check
+  text
+}
+
+enum event__hunt_heats_role {
+  prey
+  hunter
+}
+
+enum event__hunt_info_has_gun {
+  yes
+  no
+}
+
+enum event__tickets_checked_in {
+  yes
+  no
+}
+
+enum fad__fantasy_notes_rating {
+  g
+  m
+  a
+  u
+}
+
+enum form__forms_type {
+  waiver
+  registration
+  application
+  ticket
+}
+
+enum group__groups_status {
+  active
+  inactive
+  deleted
+}
+
+enum group__roles_allow_sponsors {
+  yes
+  no
+}
+
+enum mail__messages_status {
+  NEW
+  READ
+  ARCHIVED
+  DELETED
+}
+
+enum derby__registration_payment_method {
+  cash
+  credit
+  paypal
+}
+
+enum event__hunt_info_has_mask {
+  yes
+  no
+}
+
+enum group__roles_count_tickets {
+  yes
+  no
+}
+
+enum hunt2__registration_payment_method {
+  cash
+  credit
+  paypal
+}
+
+enum photo__data_rating {
+  g
+  m
+  a
+  u
+}
+
+enum w3f__registration_payment_method {
+  cash
+  credit
+  paypal
+}
+
+enum cal__ticket_types_limited_time {
+  yes
+  no
+}
+
+enum event__tickets_payment_method {
+  cash
+  credit
+  paypal
+}
+
+enum events_event_type {
+  hunt
+  party
+  w3f
+  derby
+  campout
+  zombie
+  escape
+  olympics
+}
+
+enum group__applications_status {
+  pending
+  accepted
+  rejected
+}
+
+enum group__roles_fastlane {
+  yes
+  no
+}
+
+enum derby__registration_2013_response {
+  yes
+  maybe
+  no
+}
+
+enum events_ticketable {
+  yes
+  no
+  testing
+}
+
+enum groopzone__issues_status {
+  new
+  waiting
+  open
+  closed
+}
+
+enum issue__issues_status {
+  new
+  viewed
+}
+
+enum news__articles_visible_to {
+  all
+  group
+  roles
+  attendees
+}
+
+enum accounts_old_old_status {
+  MEMBER
+  GUEST
+  BANNED
+  INACTIVE
+  ELYSIUM
+  DELETED
+}
+
+enum derby__registration_is_staff {
+  yes
+  no
+}
+
+enum derby__registration_2013_prereg {
+  yes
+  no
+}
+
+enum doc__documents_rating {
+  g
+  m
+  a
+  u
+}
+
+enum event__tickets_photos {
+  yes
+  no
+}
+
+enum group__permissions_status {
+  active
+  inactive
+}
+
+enum hunt2__registration_is_staff {
+  yes
+  no
+}
+
+enum w3f__registration_wrestle {
+  yes
+  no
+}
+
+enum accounts_old_is_admin {
+  yes
+  no
+  maybe
+}
+
+enum cal__events_rating {
+  g
+  m
+  a
+  u
+}
+
+enum derby__registration_photos {
+  yes
+  no
+}
+
+enum derby__registration_2013_status {
+  pending
+  pre_paid   @map("pre-paid")
+  checked_in
+}
+
+enum event__hunt_info_multiple_heats {
+  yes
+  no
+}
+
+enum hunt2__registration_photos {
+  yes
+  no
+}
+
+enum user__accounts_is_admin {
+  yes
+  no
+  maybe
+}
+
+enum accounts_old_status {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
+enum cal__ticket_types_require_sponsors {
+  yes
+  no
+}
+
+enum photo__images_shape {
+  square
+  circle
+}
+
+enum user__accounts_status {
+  ACTIVE
+  INACTIVE
+  BANNED
+  DELETED
+}
+
+enum w3f__registration_is_staff {
+  yes
+  no
+}
+
+enum derby__registration_2013_payment_method {
+  cash
+  credit
+  paypal
+}
+
+enum w3f__registration_dinner {
+  yes
+  no
+}
+
+enum cal__ticket_types_available_to {
+  roles
+  invited
+}
+
+enum w3f__registration_photos {
+  yes
+  no
+}
+
+enum derby__registration_role {
+  pony
+  trainer
+  spectator
+}
+
+enum hunt2__registration_hunter {
+  yes
+  no
+}
+
+enum w3f__registration_media_slut {
+  yes
+  no
+}
+
+enum derby__registration_days {
+  sat
+  sun
+  both
+}
+
+enum derby__registration_2013_is_staff {
+  yes
+  no
+}
+
+enum hunt2__registration_prey {
+  yes
+  no
+}
+
+enum w3f__registration_perform {
+  yes
+  no
+}
+
+enum derby__registration_sent_to_paypal {
+  yes
+  no
+}
+
+enum derby__registration_2013_photos {
+  yes
+  no
+}
+
+enum group__groups_join_criteria {
+  open
+  invite_only @map("invite-only")
+  closed
+}
+
+enum hunt2__registration_has_gun {
+  yes
+  no
+}
+
+enum derby__registration_2013_role {
+  pony
+  trainer
+  spectator
+}
+
+enum hunt2__registration_has_mask {
+  yes
+  no
+}
+
+enum w3f__registration_biz {
+  yes
+  no
+}
+
+enum cal__events_label {
+  ticket
+  rsvp
+}
+
+enum derby__registration_2013_days {
+  sat
+  sun
+  both
+}
+
+enum group__groups_rating {
+  g
+  m
+  a
+  u
+}
+
+enum derby__registration_2013_sent_to_paypal {
+  yes
+  no
+}
+
+enum w3f__registration_auction {
+  yes
+  no
+}
+
+enum w3f__registration_job_bartend {
+  yes
+  no
+}
+
+enum w3f__registration_job_waiter {
+  yes
+  no
+}
+
+enum w3f__registration_job_trash {
+  yes
+  no
+}
+
+enum hunt2__registration_multiple_heats {
+  yes
+  no
+}
+
+enum w3f__registration_job_dealer {
+  yes
+  no
+}
+
+enum accounts_old_old_escape {
+  yes
+  no
+}
+
+enum hunt2__registration_sent_to_paypal {
+  yes
+  no
+}
+
+enum user__accounts_view_rating {
+  g
+  m
+  a
+}
+
+enum w3f__registration_job_pool {
+  yes
+  no
+}
+
+enum group__groups_viewable_by {
+  all
+  group
+}
+
+enum w3f__registration_job_wrestle_mgr {
+  yes
+  no
+}
+
+enum w3f__registration_job_tattoo {
+  yes
+  no
+}
+
+enum accounts_old_view_rating {
+  g
+  m
+  a
+}
+
+enum w3f__registration_job_chef {
+  yes
+  no
+}
+
+enum cal__events_ticketable_by {
+  group
+  roles
+  invited
+  all
+}
+
+enum user__accounts_view_format {
+  lists
+  cards
+}
+
+enum cal__events_viewable_by {
+  all
+  group
+  invited
+}
+
+enum user__accounts_last_login_via {
+  unknown
+  password
+  facebook
+  google
+  amazon
+  admin
+  apple
+}
+
+enum group__groups_avatar_shape {
+  square
+  circle
+}
+
+enum cal__events_show_attendees {
+  all
+  attendees
+  managers
+  roles
+}
+
+enum cal__events_show_details {
+  all
+  attendees
+  managers
+}
+
+enum user__accounts_avatar_shape {
+  square
+  circle
+}
+
+enum user__accounts_events_privacy {
+  public
+  private
+}
+
+enum user__accounts_groups_privacy {
+  public
+  private
+}
+
+enum user__accounts_docs_privacy {
+  public
+  private
+}
+
+enum user__accounts_photos_privacy {
+  public
+  private
+}
+
+enum cal__events_show_desc {
+  all
+  attendees
+  invited
+  managers
+  none
+}
+
+enum user__accounts_notify_email_details {
+  none
+  full
+}
+
+enum cal__events_show_news {
+  all
+  attendees
+  invited
+  managers
+  none
+}
+
+enum cal__events_show_docs {
+  all
+  attendees
+  invited
+  managers
+  none
+}
+
+enum cal__events_show_time {
+  all
+  attendees
+  invited
+  managers
+  none
+}
+
+enum cal__events_show_place {
+  all
+  attendees
+  invited
+  managers
+  none
 }

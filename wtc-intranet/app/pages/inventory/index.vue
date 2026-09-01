@@ -1,4 +1,9 @@
 <script setup lang="ts">
+
+useHead({
+  script: [{ src: '/scripts/BrowserPrint-3.1.250.min.js' }]
+})
+
 const category = ref('')
 const lowStock = ref(false)
 
@@ -132,7 +137,7 @@ async function printLabel(inventoryId: string) {
       '^LL200',
       '^LT10',
       '^FO05,10^FB400,1,0,C,0^A0N,30,30^FDWINGNUT TRADING COMPANY^FS',
-      `^FO15,35^BQN,2,6,Q,7^FDMA,${qrPayload}^FS`,
+      `^FO15,35^BQN,2,4,Q,7^FDMA,${qrPayload}^FS`,
       `^FO155,50^A0N,22,22^FD${d.name}^FS`,
       `^FO155,75^A0N,22,22^FD${sizeLabel}^FS`,
       `^FO155,105^A0N,60,60^FD\$${d.price}^FS`,

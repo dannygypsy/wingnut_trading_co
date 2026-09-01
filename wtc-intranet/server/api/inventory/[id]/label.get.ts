@@ -2,7 +2,18 @@ export default defineEventHandler(async (event) => {
     const id = getRouterParam(event, 'id')
     if (!id) throw createError({ statusCode: 400, message: 'Missing ID' })
 
-    const item = await prisma.inventory.findUnique({ where: { id } })
+    const item = await prisma.inventory.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            product_id: true,
+            name: true,
+            size: true,
+            category: true,
+            type: true,
+            retail: true,
+        }
+    })
     if (!item) throw createError({ statusCode: 404, message: 'Item not found' })
 
     // Placements via category join
