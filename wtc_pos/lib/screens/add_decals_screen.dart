@@ -55,7 +55,7 @@ class _AddDecalsScreenState extends State<AddDecalsScreen> {
     if (_scanningSlotIndex == null || _decrementing) return;
     final raw = capture.barcodes.firstOrNull?.rawValue;
     if (raw == null || raw.isEmpty) return;
-    if (!raw.toUpperCase().startsWith('WTC-')) return;
+    //if (!raw.toUpperCase().startsWith('WTC-')) return;
 
     setState(() => _decrementing = true);
     _scanner.stop();

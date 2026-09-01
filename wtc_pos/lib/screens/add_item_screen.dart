@@ -34,10 +34,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
   }
 
   void _onQrDetected(BarcodeCapture capture) {
+    debugPrint("QR detected: ${capture.barcodes.firstOrNull?.rawValue}");
     if (_scanned || _loading) return;
     final raw = capture.barcodes.firstOrNull?.rawValue;
     if (raw == null || raw.isEmpty) return;
-    if (!raw.toUpperCase().startsWith('WTC-')) return;
+    //if (!raw.toUpperCase().startsWith('WTC-')) return;
 
     setState(() => _scanned = true);
     _scanner.stop();
