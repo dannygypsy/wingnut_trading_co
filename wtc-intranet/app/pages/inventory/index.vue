@@ -1,8 +1,5 @@
 <script setup lang="ts">
-useHead({
-  title: 'Inventory',
-  script: [{ src: '/scripts/BrowserPrint-3.1.250.min.js' }]
-})
+useHead({ title: 'Inventory' })
 
 const category = ref('')
 const lowStock = ref(false)
@@ -120,41 +117,19 @@ function clearFilters() {
   lowStock.value = false
 }
 
-// Label printing — calls Zebra BrowserPrint
+// Label printing — via backend lpr (local only)
 async function printLabel(inventoryId: string) {
+  const input = prompt('How many labels?', '1')
+  if (input === null) return
+  const quantity = parseInt(input) || 1
   try {
-    const d = await $fetch<any>(`/api/inventory/${inventoryId}/label`)
-    const sizeMap: Record<string, string> = {
-      'XS': 'X-SMALL', 'S': 'SMALL', 'M': 'MEDIUM', 'L': 'LARGE',
-      'XL': 'X-LARGE', '2XL': '2X-LARGE', '3XL': '3X-LARGE', '4XL': '4X-LARGE'
-    }
-    const sizeLabel = sizeMap[d.size] || d.size || ''
-    const qrPayload = d.size ? `${d.product_id}|${d.size}` : d.product_id
-
-    const zpl = [
-      '^XA',
-      '^PW400',
-      '^LL200',
-      '^LT10',
-      '^FO05,10^FB400,1,0,C,0^A0N,30,30^FDWINGNUT TRADING COMPANY^FS',
-      `^FO15,35^BQN,2,4,Q,7^FDMA,${qrPayload}^FS`,
-      `^FO155,50^A0N,22,22^FD${d.name}^FS`,
-      `^FO155,75^A0N,22,22^FD${sizeLabel}^FS`,
-      `^FO155,105^A0N,60,60^FD\$${d.price}^FS`,
-      `^FO155,160^A0N,18,18^FD${d.subPrice}^FS`,
-      '^XZ'
-    ].join('\n')
-
-    const BrowserPrint = (window as any).BrowserPrint
-    BrowserPrint.getDefaultDevice('printer', (device: any) => {
-      device.send(zpl,
-          () => console.log('Printed:', d.wtcId),
-          (err: any) => alert('Print error: ' + err)
-      )
-    }, () => alert('No printer found. Is Zebra Browser Print running?'))
-
+    await $fetch('/api/wtc/labels/print', { method: 'POST', body: { inventoryId, quantity } })
   } catch (err: any) {
-    alert('Could not get label data: ' + err.message)
+    if ((err as any).status === 503) {
+      alert('Label printing is only available on the local server.')
+    } else {
+      alert('Print error: ' + err.message)
+    }
   }
 }
 </script>

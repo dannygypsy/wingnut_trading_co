@@ -13,15 +13,16 @@ export default defineEventHandler(async (event) => {
 
     if (size) {
         rows = await prisma.$queryRaw<any[]>`
-      SELECT i.product_id, i.id AS item_id, i.name, i.size, i.category, i.retail,
-             i.remaining AS total_remaining,
+      SELECT i.product_id,
+             MAX(i.name) AS name, i.size, MAX(i.category) AS category,
+             MAX(i.retail) AS retail, SUM(i.remaining) AS total_remaining,
              (SELECT GROUP_CONCAT(p.name ORDER BY p.sort_order, p.name SEPARATOR ',')
               FROM wtc_inventory_placements p
               JOIN wtc_inventory_categories c ON p.category_id = c.id
-              WHERE c.name = i.category) AS placements
+              WHERE c.name = MAX(i.category)) AS placements
       FROM wtc_inventory i
       WHERE (i.product_id = ${rawId} OR i.product_id LIKE ${rawId + '%'}) AND i.size = ${size}
-      LIMIT 1`
+      GROUP BY i.product_id, i.size`
     } else {
         rows = await prisma.$queryRaw<any[]>`
       SELECT i.product_id,

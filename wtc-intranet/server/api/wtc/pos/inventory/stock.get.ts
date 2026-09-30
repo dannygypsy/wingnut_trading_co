@@ -13,10 +13,9 @@ export default defineEventHandler(async (event) => {
 
     if (size) {
         rows = await prisma.$queryRaw<any[]>`
-      SELECT remaining AS total_remaining
+      SELECT SUM(remaining) AS total_remaining
       FROM wtc_inventory
-      WHERE (product_id = ${rawId} OR product_id LIKE ${rawId + '%'}) AND size = ${size}
-      LIMIT 1`
+      WHERE (product_id = ${rawId} OR product_id LIKE ${rawId + '%'}) AND size = ${size}`
     } else {
         rows = await prisma.$queryRaw<any[]>`
       SELECT SUM(remaining) AS total_remaining
